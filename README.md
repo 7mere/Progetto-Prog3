@@ -120,3 +120,27 @@ Le istruzioni scritte in build.gradle dicono a Gradle cosa mettere in questa car
 - si usa il comando ./mvnw javafx:run per far eseguire il progetto da terminale
 
 - pom.xml: Si ha che Maven richiede Java 21 dalla parte del Server
+
+### Classe Email 
+
+Ho evitato Serializable perché la specifica richiede la trasmissione di dati testuali via socket. Inoltre Serializable introduce un forte accoppiamento tra client e server e rende il protocollo fragile ai cambiamenti. Ho preferito un protocollo testuale (JSON) che è più scalabile, debuggabile e aderente alle richieste; inoltre JSON resta preferibile (leggibile, ispezionabile) ma Serializable è accettabile per file binari.
+
+Solo il MAIL CLIENT crea nuove istanze di Email, quando l’utente:
+ - crea un nuovo messaggio
+ - risponde (reply / reply-all)
+ - inoltra (forward)
+
+Email ha il costruttore vuoto perché serve a Jackson (JSON): Jackson crea l’oggetto vuoto poi chiama i setter
+Senza costruttore vuoto: deserializzazione fallisce
+
+Ciclo di vita completo di una Email (passo-passo):
+1) Creazione (CLIENT); con istanza della classe Email
+2) Invio al server; client serializza l'oggetto Email in JSON e lo manda via socket
+3) Ricezione sul SERVER; riceve il JSON e lo ricostruisce come oggetto (deserializzazione)
+4) Salvataggio; prende l’istanza Email e la aggiunge alla mailbox dei destinatari (vive nel file JSON e in memoria del server)
+5) Distribuzione al client destinatario; riceve JSON e ricostruisce l’oggetto Email, questa è una nuova istanza Java, ma rappresenta lo stesso messaggio (stesso id) 
+6) Visualizzazione; inserisce l’Email nella ObservableList<Email> inbox e a ListView la mostra automaticamente
+
+Per un progetto reale sarebbe meglio fare una configurazione della porta del server all'esterno per garantire flessibilità e separazione tra codice e configurazione; altrimenti se la si scrive nel codice bisognerebbe ricompilare e ridistribuire rischiando cosi errori inutili; altrimenti si scrive direttamente sul codice
+
+Server aperto in backend nel metodo main() della classe ServerMain 

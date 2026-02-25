@@ -61,7 +61,7 @@
 
     <!-- Bottone -->
     <Button text="Log In"
-            onAction="#onHelloButtonClick"
+            onAction="#onLoginButtonClick"
             AnchorPane.leftAnchor="28.0"
             AnchorPane.rightAnchor="28.0"
             layoutY="176.0"

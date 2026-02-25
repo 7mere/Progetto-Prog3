@@ -1,4 +1,4 @@
-package pp3.server;
+package com.unito.server;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;

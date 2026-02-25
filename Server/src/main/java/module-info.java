@@ -1,8 +1,11 @@
-module pp3.server {
+module com.unito.server {
     requires javafx.controls;
     requires javafx.fxml;
+    requires com.unito.server;
 
 
-    opens pp3.server to javafx.fxml;
-    exports pp3.server;
+    opens com.unito.server to javafx.fxml;
+    exports com.unito.server;
+    exports com.unito.server.models;
+    opens com.unito.server.models to javafx.fxml;
 }

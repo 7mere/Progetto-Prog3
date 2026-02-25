@@ -142,5 +142,18 @@ Ciclo di vita completo di una Email (passo-passo):
 6) Visualizzazione; inserisce l’Email nella ObservableList<Email> inbox e a ListView la mostra automaticamente
 
 Per un progetto reale sarebbe meglio fare una configurazione della porta del server all'esterno per garantire flessibilità e separazione tra codice e configurazione; altrimenti se la si scrive nel codice bisognerebbe ricompilare e ridistribuire rischiando cosi errori inutili; altrimenti si scrive direttamente sul codice
+Uso della seguente fonte:
+ - https://stackoverflow.com/questions/24093257/thread-currentthread-getcontextclassloader-getresourceasstream-reads-a-prope
 
 Server aperto in backend nel metodo main() della classe ServerMain 
+
+#### Serialiazzione e Deserializzazione JSON
+Uso di una libreria di mapping JSON per serializzare o deserializzare l'oggetto Email, in questo caso Jackson, che permetterà di trasformare l'oggetto in JSON o viceversa
+Aggiungendo una dipendenza all'interno di Maven
+
+### Thread e Thread Pool
+Si ha un solo thread che rimane in attessa di connessioni (accpet()) e li delega al pool di thread
+Si è aggiunto un pool di thread per gestire in maniera sincronizzata e parallela i task invitati per gestire la connessione fra il server e il client che l'ha richiesto
+L'ha decisione ricade tra l'executors newFixedThreadPool (che è gia preconfigurato) oppure ThreadPoolExecutor (che è configurabile, più adatto per un controllo su una architettura reale come con un server o un socket); per è deciso in questo caso di optare per un controllo completo (in modo da non creare una coda infinita ma piuttosto una controllata)
+
+Si è impostato il server come daemon per assicurare che il servizio non blocchi lo spegnimento (shutdown) della JVM, favorendo avvio/terminazione controllati.

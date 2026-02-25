@@ -1,4 +1,4 @@
-package pp3.server.models;
+package com.unito.server.models;
 
 import java.util.Date;
 import java.util.List;

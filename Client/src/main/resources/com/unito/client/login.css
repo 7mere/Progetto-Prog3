@@ -1,0 +1,61 @@
+/* Root background */
+.root-pane {
+    -fx-background-color: linear-gradient(to bottom, #ffffff, #f3f6ff);
+}
+
+/* Labels */
+.title-label {
+    -fx-text-fill: #0f172a;
+    -fx-font-weight: 800;
+}
+
+.subtitle-label {
+    -fx-text-fill: #64748b;
+}
+
+.field-label {
+    -fx-text-fill: #334155;
+    -fx-font-weight: 700;
+}
+
+.result-label {
+    -fx-text-fill: #ef4444;
+    -fx-font-weight: 700;
+}
+
+/* TextField */
+.email-field {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1;
+    -fx-padding: 0 12 0 12;
+    -fx-font-size: 13px;
+}
+
+/* Optional: focus effect (più “pulito”) */
+.email-field:focused {
+    -fx-border-color: #3b82f6;
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.20), 16, 0.2, 0, 6);
+}
+
+/* Button */
+.login-button {
+    -fx-background-radius: 14;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+    -fx-text-fill: white;
+    -fx-background-color: linear-gradient(to bottom, #3b82f6, #2563eb);
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.25), 18, 0.2, 0, 8);
+}
+
+/* Optional: hover/pressed */
+.login-button:hover {
+    -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.35), 22, 0.25, 0, 10);
+}
+
+.login-button:pressed {
+    -fx-translate-y: 1;
+}

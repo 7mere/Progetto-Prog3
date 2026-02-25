@@ -12,7 +12,8 @@ public class ClientApplication extends Application {
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(ClientApplication.class.getResource("login-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 320, 240);
-        stage.setTitle("Hello!");
+        scene.getStylesheets().add(getClass().getResource("login.css").toExternalForm());
+        stage.setTitle("Login");
         stage.setScene(scene);
         stage.show();
     }

@@ -1,16 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
-
 <?import javafx.scene.control.Button?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.unito.client.LoginController">
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="320.0" prefWidth="420.0"
+            xmlns="http://javafx.com/javafx/17.0.12"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.unito.client.LoginController"
+            styleClass="root-pane">
+
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+        <Insets top="26.0" right="28.0" bottom="26.0" left="28.0"/>
     </padding>
 
-    <Label fx:id="welcomeText"/>
-    <Button text="Hello!" onAction="#onHelloButtonClick"/>
-</VBox>
+    <!-- Titolo -->
+    <Label text="Login"
+           AnchorPane.leftAnchor="28.0"
+           AnchorPane.rightAnchor="28.0"
+           layoutY="18.0"
+           styleClass="title-label">
+        <font>
+            <Font size="26.0"/>
+        </font>
+    </Label>
+
+    <!-- Sottotitolo -->
+    <Label text="Inserisci la tua email per continuare"
+           AnchorPane.leftAnchor="28.0"
+           AnchorPane.rightAnchor="28.0"
+           layoutY="54.0"
+           styleClass="subtitle-label">
+        <font>
+            <Font size="13.0"/>
+        </font>
+    </Label>
+
+    <!-- Label campo -->
+    <Label text="Email"
+           AnchorPane.leftAnchor="28.0"
+           AnchorPane.rightAnchor="28.0"
+           layoutY="98.0"
+           styleClass="field-label">
+        <font>
+            <Font size="12.0"/>
+        </font>
+    </Label>
+
+    <!-- Campo email -->
+    <TextField fx:id="mailField"
+               promptText="nome@dominio.com"
+               AnchorPane.leftAnchor="28.0"
+               AnchorPane.rightAnchor="28.0"
+               layoutY="120.0"
+               prefHeight="42.0"
+               styleClass="email-field"/>
+
+    <!-- Bottone -->
+    <Button text="Log In"
+            onAction="#onHelloButtonClick"
+            AnchorPane.leftAnchor="28.0"
+            AnchorPane.rightAnchor="28.0"
+            layoutY="176.0"
+            prefHeight="44.0"
+            styleClass="login-button"/>
+
+    <!-- Messaggio -->
+    <Label fx:id="result"
+           AnchorPane.leftAnchor="28.0"
+           AnchorPane.rightAnchor="28.0"
+           layoutY="236.0"
+           prefHeight="54.0"
+           wrapText="true"
+           styleClass="result-label">
+        <font>
+            <Font size="12.0"/>
+        </font>
+    </Label>
+
+</AnchorPane>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

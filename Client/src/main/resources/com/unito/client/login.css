@@ -1,6 +1,16 @@
 /* Root background */
 .root-pane {
-    -fx-background-color: linear-gradient(to bottom, #ffffff, #f3f6ff);
+    -fx-background-color: linear-gradient(to bottom right, #f8fafc, #eef2ff);
+}
+
+/* Card container */
+.card {
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: rgba(148, 163, 184, 0.35);
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.12), 28, 0.2, 0, 10);
 }
 
 /* Labels */
@@ -21,6 +31,7 @@
 .result-label {
     -fx-text-fill: #ef4444;
     -fx-font-weight: 700;
+    -fx-padding: 6 0 0 0;
 }
 
 /* TextField */

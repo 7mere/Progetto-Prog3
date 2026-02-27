@@ -18,7 +18,7 @@
         <Insets top="36.0" right="36.0" bottom="36.0" left="36.0"/>
     </padding>
 
-    <VBox alignment="TOP_LEFT" spacing="12.0" maxWidth="420.0" styleClass="card">
+    <VBox spacing="12.0" maxWidth="420.0" styleClass="card">
         <padding>
             <Insets top="24.0" right="24.0" bottom="24.0" left="24.0"/>
         </padding>

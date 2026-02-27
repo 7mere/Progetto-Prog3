@@ -31,5 +31,8 @@ public class LoginController {
         return Pattern.matches(emailRegex, normalized);
     }
 
+    public static class InboxController {
+        // Da definire
+    }
 }
 

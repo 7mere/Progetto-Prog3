@@ -1,0 +1,116 @@
+/* Root */
+.root {
+    -fx-background-color: #F6F7FB;
+}
+
+/* Top area */
+.top-container {
+    -fx-background-color: transparent;
+}
+
+.top-bar {
+    -fx-background-color: transparent;
+}
+
+.app-title {
+    -fx-font-weight: 700;
+}
+
+.muted {
+    -fx-text-fill: #5A6170;
+}
+
+.user-email {
+    -fx-font-weight: 700;
+}
+
+/* Connection */
+.connection-dot {
+    -fx-fill: #C0392B; /* default "non connesso" */
+}
+
+.connection-text {
+    -fx-font-weight: 700;
+}
+
+/* Notification */
+.notification-bar {
+    -fx-background-color: #E8F4FF;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: #BBDFFF;
+}
+
+.notification-text {
+    -fx-font-weight: 700;
+}
+
+/* Error */
+.error-label {
+    -fx-text-fill: #B00020;
+    -fx-font-weight: 700;
+}
+
+/* Main split */
+.main-split {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* Cards */
+.card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: #E6E8EF;
+}
+
+/* Section titles */
+.section-title {
+    -fx-font-weight: 700;
+}
+
+/* Table */
+.message-table {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+/* Fields */
+.field-label {
+    -fx-font-weight: 700;
+}
+
+.field-value {
+    -fx-text-fill: #2C3E50;
+}
+
+/* Text areas */
+.detail-body,
+.compose-body {
+    -fx-background-radius: 10;
+}
+
+/* Buttons */
+.btn {
+    -fx-background-radius: 10;
+}
+
+.btn-primary {
+    -fx-background-color: #2D6CDF;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 10;
+}
+
+.btn-danger {
+    -fx-background-color: #D64545;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 10;
+}
+
+/* Bottom bar */
+.bottom-bar {
+    -fx-background-color: transparent;
+}

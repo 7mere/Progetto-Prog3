@@ -1,8 +1,6 @@
 module com.unito.server {
     requires javafx.controls;
     requires javafx.fxml;
-    requires com.unito.server;
-
 
     opens com.unito.server to javafx.fxml;
     exports com.unito.server;

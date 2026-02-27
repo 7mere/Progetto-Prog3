@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="720.0" prefWidth="1100.0"
+            xmlns="http://javafx.com/javafx/17.0.12"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.unito.client.LoginController.InboxController"
+            styleClass="root">
+
+    <!-- TOP BAR: info utente + stato connessione -->
+    <top>
+        <VBox spacing="10.0" BorderPane.alignment="CENTER" styleClass="top-container">
+            <padding>
+                <Insets top="14.0" right="16.0" bottom="10.0" left="16.0"/>
+            </padding>
+
+            <HBox spacing="12.0" alignment="CENTER_LEFT" styleClass="top-bar">
+                <Label text="Mail Client" styleClass="app-title">
+                    <font>
+                        <Font size="18.0"/>
+                    </font>
+                </Label>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Label text="Loggato come:" styleClass="muted"/>
+                <Label fx:id="userEmailLabel" text="-" styleClass="user-email"/>
+
+                <Separator orientation="VERTICAL" prefHeight="22.0"/>
+
+                <HBox spacing="8.0" alignment="CENTER_LEFT" styleClass="connection-box">
+                    <Circle fx:id="connectionDot" radius="6.0" styleClass="connection-dot"/>
+                    <Label fx:id="connectionStatusLabel" text="NON CONNESSO" styleClass="connection-text"/>
+                </HBox>
+            </HBox>
+
+            <!-- Banner notifiche -->
+            <HBox fx:id="notificationBar"
+                  spacing="10.0"
+                  alignment="CENTER_LEFT"
+                  visible="false"
+                  managed="false"
+                  styleClass="notification-bar">
+                <padding>
+                    <Insets top="10.0" right="12.0" bottom="10.0" left="12.0"/>
+                </padding>
+                <Label fx:id="notificationLabel" text="Hai ricevuto un nuovo messaggio!" styleClass="notification-text"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="dismissNotificationButton" text="OK" styleClass="btn"/>
+            </HBox>
+
+            <!-- Area errori -->
+            <Label fx:id="errorLabel"
+                   text=""
+                   visible="false"
+                   managed="false"
+                   styleClass="error-label"/>
+        </VBox>
+    </top>
+
+    <!-- CENTER: SplitPane -->
+    <center>
+        <SplitPane dividerPositions="0.38" BorderPane.alignment="CENTER" styleClass="main-split">
+            <items>
+
+                <!-- LEFT: lista messaggi -->
+                <VBox spacing="10.0" styleClass="card">
+                    <padding>
+                        <Insets top="14.0" right="14.0" bottom="14.0" left="14.0"/>
+                    </padding>
+
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <Label text="Inbox" styleClass="section-title">
+                            <font>
+                                <Font size="16.0"/>
+                            </font>
+                        </Label>
+
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <Label text="Ultimo aggiornamento:" styleClass="muted"/>
+                        <Label fx:id="lastUpdateLabel" text="-" styleClass="strong"/>
+                    </HBox>
+
+                    <TextField fx:id="searchField" promptText="Cerca (mittente / oggetto)..." styleClass="search-field"/>
+
+                    <TableView fx:id="messageTable" VBox.vgrow="ALWAYS" styleClass="message-table">
+                        <columns>
+                            <TableColumn fx:id="colFrom" text="Da" prefWidth="160.0"/>
+                            <TableColumn fx:id="colSubject" text="Oggetto" prefWidth="220.0"/>
+                            <TableColumn fx:id="colDate" text="Data" prefWidth="130.0"/>
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="10.0" alignment="CENTER_RIGHT">
+                        <Button fx:id="deleteButton" text="Elimina" disable="true" styleClass="btn-danger"/>
+                        <Button fx:id="replyButton" text="Reply" disable="true" styleClass="btn"/>
+                        <Button fx:id="replyAllButton" text="Reply-All" disable="true" styleClass="btn"/>
+                        <Button fx:id="forwardButton" text="Forward" disable="true" styleClass="btn"/>
+                    </HBox>
+                </VBox>
+
+                <!-- RIGHT: dettagli + composer -->
+                <VBox spacing="12.0" styleClass="card">
+                    <padding>
+                        <Insets top="14.0" right="14.0" bottom="14.0" left="14.0"/>
+                    </padding>
+
+                    <TabPane fx:id="rightTabPane" VBox.vgrow="ALWAYS" styleClass="right-tabs">
+                        <tabs>
+
+                            <!-- Dettagli -->
+                            <Tab text="Dettagli" closable="false">
+                                <BorderPane>
+                                    <top>
+                                        <VBox spacing="8.0">
+                                            <Label text="Messaggio selezionato" styleClass="section-title">
+                                                <font>
+                                                    <Font size="16.0"/>
+                                                </font>
+                                            </Label>
+
+                                            <GridPane hgap="10.0" vgap="8.0">
+                                                <columnConstraints>
+                                                    <ColumnConstraints minWidth="90.0" prefWidth="90.0"/>
+                                                    <ColumnConstraints hgrow="ALWAYS"/>
+                                                </columnConstraints>
+
+                                                <Label text="Da:" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="field-label"/>
+                                                <Label fx:id="detailFromLabel" text="-" GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="field-value"/>
+
+                                                <Label text="A:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="field-label"/>
+                                                <Label fx:id="detailToLabel" text="-" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="field-value"/>
+
+                                                <Label text="Data:" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="field-label"/>
+                                                <Label fx:id="detailDateLabel" text="-" GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="field-value"/>
+
+                                                <Label text="Oggetto:" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="field-label"/>
+                                                <Label fx:id="detailSubjectLabel" text="-" GridPane.rowIndex="3" GridPane.columnIndex="1" styleClass="field-value"/>
+                                            </GridPane>
+                                        </VBox>
+                                    </top>
+
+                                    <center>
+                                        <TextArea fx:id="detailBodyArea"
+                                                  editable="false"
+                                                  wrapText="true"
+                                                  promptText="Seleziona un messaggio dalla lista per visualizzarne il contenuto..."
+                                                  styleClass="detail-body"/>
+                                    </center>
+
+                                    <bottom>
+                                        <HBox spacing="10.0" alignment="CENTER_RIGHT">
+                                            <Button fx:id="composeNewButton" text="Nuovo messaggio" styleClass="btn-primary"/>
+                                        </HBox>
+                                    </bottom>
+
+                                    <padding>
+                                        <Insets top="10.0" right="0.0" bottom="0.0" left="0.0"/>
+                                    </padding>
+                                </BorderPane>
+                            </Tab>
+
+                            <!-- Scrivi -->
+                            <Tab text="Scrivi" closable="false">
+                                <VBox spacing="10.0">
+                                    <Label text="Componi messaggio" styleClass="section-title">
+                                        <font>
+                                            <Font size="16.0"/>
+                                        </font>
+                                    </Label>
+
+                                    <Label fx:id="composeModeLabel" text="Modalità: NUOVO" styleClass="compose-mode"/>
+
+                                    <GridPane hgap="10.0" vgap="10.0">
+                                        <columnConstraints>
+                                            <ColumnConstraints minWidth="70.0" prefWidth="70.0"/>
+                                            <ColumnConstraints hgrow="ALWAYS"/>
+                                        </columnConstraints>
+
+                                        <Label text="To:" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="field-label"/>
+                                        <TextField fx:id="toField"
+                                                   promptText="dest1@example.com, dest2@example.com"
+                                                   GridPane.rowIndex="0" GridPane.columnIndex="1" styleClass="text-field"/>
+
+                                        <Label text="Cc:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="field-label"/>
+                                        <TextField fx:id="ccField"
+                                                   promptText="(opzionale) destinatari in copia"
+                                                   GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="text-field"/>
+
+                                        <Label text="Oggetto:" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="field-label"/>
+                                        <TextField fx:id="subjectField"
+                                                   promptText="Oggetto..."
+                                                   GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="text-field"/>
+                                    </GridPane>
+
+                                    <TextArea fx:id="bodyArea"
+                                              VBox.vgrow="ALWAYS"
+                                              wrapText="true"
+                                              promptText="Scrivi qui il messaggio..."
+                                              styleClass="compose-body"/>
+
+                                    <Label fx:id="addressValidationLabel"
+                                           text=""
+                                           visible="false"
+                                           managed="false"
+                                           styleClass="error-label"/>
+
+                                    <HBox spacing="10.0" alignment="CENTER_RIGHT">
+                                        <Button fx:id="clearComposeButton" text="Pulisci" styleClass="btn"/>
+                                        <Button fx:id="sendButton" text="Invia" defaultButton="true" styleClass="btn-primary"/>
+                                    </HBox>
+                                </VBox>
+                            </Tab>
+
+                        </tabs>
+                    </TabPane>
+                </VBox>
+
+            </items>
+            <padding>
+                <Insets top="0.0" right="16.0" bottom="16.0" left="16.0"/>
+            </padding>
+        </SplitPane>
+    </center>
+
+    <!-- BOTTOM -->
+    <bottom>
+        <HBox spacing="10.0" alignment="CENTER_LEFT" styleClass="bottom-bar">
+            <padding>
+                <Insets top="0.0" right="16.0" bottom="12.0" left="16.0"/>
+            </padding>
+            <Label text="Stato:" styleClass="strong"/>
+            <Label fx:id="statusBarLabel" text="Pronto."/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <ProgressIndicator fx:id="busyIndicator" visible="false" managed="false" prefHeight="18.0" prefWidth="18.0"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

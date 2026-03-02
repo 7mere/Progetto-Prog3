@@ -154,6 +154,16 @@ Aggiungendo una dipendenza all'interno di Maven
 ### Thread e Thread Pool
 Si ha un solo thread che rimane in attessa di connessioni (accpet()) e li delega al pool di thread
 Si è aggiunto un pool di thread per gestire in maniera sincronizzata e parallela i task invitati per gestire la connessione fra il server e il client che l'ha richiesto
-L'ha decisione ricade tra l'executors newFixedThreadPool (che è gia preconfigurato) oppure ThreadPoolExecutor (che è configurabile, più adatto per un controllo su una architettura reale come con un server o un socket); per è deciso in questo caso di optare per un controllo completo (in modo da non creare una coda infinita ma piuttosto una controllata)
+L'ha decisione ricade tra l'executors newFixedThreadPool (che è gia preconfigurato) oppure ThreadPoolExecutor (che è configurabile, più adatto per un controllo su una architettura reale come con un server o un socket); per questo si è deciso di optare per un controllo completo (in modo da non creare una coda infinita ma piuttosto una controllata)
+Altrimenti si potrebbe usare newCachedThreadPool() per creare un thread per ogni connessione, ma potrebbe essere inefficiente se ci sono molte connessioni
 
-Si è impostato il server come daemon per assicurare che il servizio non blocchi lo spegnimento (shutdown) della JVM, favorendo avvio/terminazione controllati.
+Nella classe ServerSocketManager si gestisce i socket del lato server, in cui:
+1) Nel costruttore a parte l'inizializzazione degli attributi passati come parametri, si setta il Thread del ServerSocketManager come daemon per assicurare che il servizio non blocchi lo spegnimento (shutdown) della JVM, favorendo avvio/terminazione controllati; se l’unico thread rimasto è questo, la JVM può terminare.
+2) Poi prima si esegue il metodo start(), chiamata dal thread della GUI con server.start(), per aggiungere la logica di inizializzazione del server come la creazione di un server socket sulla porta specializzata e un thread di Pool usando ThreadPoolExecutor
+3) Successivamente si chiama il metodo run(), tramite il metodo super.start() chiamato in start(), per la logica di accettazzione delle connessioni a lato client, in cui si avvia il thread (daemon) del ServerSocketManager in parallelo al thread principale (GUI)
+4) Nel metodo run() c'è un loop di accettazzione dei socket (accept()) e per ogni nuova connessione accettata il server sottomette un task (fornendo un'istanza dell'oggetto ClientHandler, che implementa Runnable) al pool, in cui questo pool provvede a creare/riutilizzare un thread worker per eseguire quel Runnable.
+Inoltre nel ciclo principale c'è un timeout per poter controllare periodicamente Thread.interrupted() e sapere quando uscire
+5) Infine quando il thread è stato interrotto (chiuso la GUI), allora si chiude il server socket e il thread pool
+
+N.B. 
+    il metodo start() che “avvia” il server non è mai invocato direttamente all’interno dello stesso ServerSocketManager; è sempre un altro thread (GUI o main) che lo richiama, mentre super.start() è quello che innesca la creazione del thread esecutore. Per il resto la logica di accettazione/dispatch all’interno di run() e il ruolo del pool sono esattamente come li hai spiegati.

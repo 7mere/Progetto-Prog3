@@ -51,7 +51,7 @@ public class ServerMain extends Application {
 
         // Altro metodo per avviare il server in un thread separato
         server = new ServerSocketManager(Integer.parseInt(properties.getProperty("port")), storage); // aggiungere come parametro il controller??
-        server.start(); // avvia il server in un thread separato
+        server.start(); // avvia il server in un thread separato (cioè esegue il metodo run() in parallelo al thread principale)
 
     }
 

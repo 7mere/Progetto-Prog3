@@ -9,7 +9,7 @@
 <BorderPane prefHeight="720.0" prefWidth="1100.0"
             xmlns="http://javafx.com/javafx/17.0.12"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.unito.client.LoginController.InboxController"
+            fx:controller="com.unito.client.InboxController"
             styleClass="root">
 
     <!-- TOP BAR: info utente + stato connessione -->

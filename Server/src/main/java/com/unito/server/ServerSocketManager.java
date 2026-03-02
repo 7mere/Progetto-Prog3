@@ -1,15 +1,27 @@
 package com.unito.server;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import com.unito.server.models.ServerStorage;
+import com.unito.server.ClientHandler; // classe che gestisce la logica di comunicazione con i client, da implementare
 
 public class ServerSocketManager extends Thread {
     private final int port;
     private final ServerStorage model; // modello condiviso tra i thread per accedere allo stato persistente e alla logica di dominio del server
 
-    private final ServerSocket serverSocket; // socket del server per accettare connessioni
+    private ServerSocket serverSocket; // socket del server per accettare connessioni
     private final ThreadPoolExecutor threadPool; // pool di thread per gestire le connessioni dei client in modo efficiente
 
     public ServerSocketManager(int port, ServerStorage storage) { 
+        // Inizializzazione del thread pool
+        threadPool = new ThreadPoolExecutor(10, 15, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>()); 
+        threadPool.allowCoreThreadTimeOut(true); // Permette ai thread core (quei 10) di terminare se inattivi, perché costa meno creare nuovi thread che mantenerli in vita quando non servono
+        
         this.port = port;
         this.model = storage;
         // Set thread as daemon so it won't prevent JVM shutdown
@@ -20,13 +32,11 @@ public class ServerSocketManager extends Thread {
     // il metodo start() viene chiamato dal thread principale (GUI) quando si avvia il server, e il metodo run() viene eseguito in un thread separato creato da start().
     @Override
     public void start() {
-        try (
+        try {
             serverSocket = new ServerSocket(port);
-            threadPool = new ThreadPoolExecutor(10, 15, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>()); 
-            threadPool.allowCoreThreadTimeOut(true); // Permette ai thread core (quei 10) di terminare se inattivi, perché costa meno creare nuovi thread che mantenerli in vita quando non servono
             // aggiunta un logger per loggare l'avvio del server invece di stampare su console
             System.out.println("Server started on port " + port);
-        )
+        }
         catch (IOException e) {
             // aggiunta un logger per loggare l'errore invece di stampare su console
             System.err.println("Error starting ServerSocketManager: " + e.getMessage());

@@ -167,3 +167,29 @@ Inoltre nel ciclo principale c'è un timeout per poter controllare periodicament
 
 N.B. 
     il metodo start() che “avvia” il server non è mai invocato direttamente all’interno dello stesso ServerSocketManager; è sempre un altro thread (GUI o main) che lo richiama, mentre super.start() è quello che innesca la creazione del thread esecutore. Per il resto la logica di accettazione/dispatch all’interno di run() e il ruolo del pool sono esattamente come li hai spiegati.
+
+## Mere && Vale
+
+**Ecco cosa è stato implementato finora:**
+
+### 1. Architettura MVC e Pattern Observer
+* Creata la classe Model `EmailClient` utilizzando le **JavaFX Properties** (`SimpleStringProperty`). Questo soddisfa il requisito del pattern Observer-Observable: la `TableView` si aggiorna automaticamente ad ogni modifica dei dati senza bisogno di ricaricare la lista.
+* Separazione delle responsabilità: la logica di connessione è stata isolata nella classe dedicata `MailService`, mantenendo i Controller puliti e dedicati solo alla gestione della UI.
+
+### 2. Flusso dell'Applicazione e UI
+* **Login:** Implementato il controllo sintattico della mail tramite Regex. Se valida, la mail viene passata al controller principale aprendo la schermata della Inbox.
+* **Lettura:** La tabella mostra la lista delle email. Cliccando su una riga, il pannello "Dettagli" a destra si popola automaticamente con il contenuto completo e i pulsanti di azione si sbloccano.
+* **Scrittura & Azioni:** Completati tutti i flussi dei bottoni:
+    * *Nuovo Messaggio / Pulisci:* Svuotano i campi del composer.
+    * *Reply / Reply-All:* Passano al composer pre-compilando il destinatario, aggiungendo "Re:" all'oggetto e riportando il testo originale.
+    * *Forward:* Passa al composer pre-compilando "Fwd:" e il testo originale inoltrato.
+    * *Elimina:* Rimuove in tempo reale la mail dalla lista osservabile.
+
+### 3. Concorrenza (Multithreading) e Rete
+* **Polling in Background:** Implementato un Thread dedicato (`Daemon`) che ogni 5 secondi richiede al `MailService` le nuove email.
+* **Sicurezza Thread-UI:** Tutti gli aggiornamenti visivi (nuovi messaggi in lista, notifiche, cambio stato connessione) derivanti dal thread di polling vengono passati al JavaFX Application Thread tramite `Platform.runLater()`, evitando il crash dell'interfaccia.
+* **Invio Asincrono:** L'azione di invio mail è gestita tramite un `Task` di JavaFX in background. Durante l'operazione l'interfaccia mostra un `ProgressIndicator` (spinner) e inibisce i click multipli.
+
+### 4. Validazione e Gestione Errori
+* Implementata la validazione Regex estesa: il campo "To:" (destinatari) supporta l'inserimento di **indirizzi multipli separati da virgola**, validandoli singolarmente prima di permettere l'invio.
+* Gestione visiva della disconnessione (pallino rosso) e della notifica di nuovi messaggi (banner chiudibile).

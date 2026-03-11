@@ -1,19 +1,19 @@
 package com.unito.server;
 
+
+import com.unito.server.models.ServerStorage;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-
-import com.unito.server.models.ServerStorage;
 
 public class ClientHandler implements Runnable {
 
     private final Socket clientSocket;
     private final ServerStorage model;
 
-    private BufferedReader reader; // reader per leggere i messaggi dal client
-    private PrintWriter writer; // writer per inviare i messaggi al client
+
 
     public ClientHandler(Socket clientSocket, ServerStorage model) {
         this.clientSocket = clientSocket;
@@ -22,15 +22,36 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        try {
-            reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            writer = new PrintWriter(clientSocket.getOutputStream(), true); // true per abilitare l'auto-flush, così ogni volta che scriviamo qualcosa con writer.println() viene inviato immediatamente al client senza dover chiamare writer.flush() manualmente
-            
+
+        try (
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
+        ) {
+            String request = in.readLine();
+
+            if (request != null) {
+                System.out.println("Richiesta ricevuta dal client: " + request);
+
+                if (request.startsWith("LOGIN_CLICK|")) {
+                    String email = request.substring("LOGIN_CLICK|".length());
+                    System.out.println("L'utente " + email + " ha cliccato su login");
+                    out.println("OK");
+                } else {
+                    System.out.println("Comando non riconosciuto");
+                    out.println("ERR");
+                }
+            }
+
         } catch (Exception e) {
+            System.err.println("Errore nel ClientHandler: " + e.getMessage());
             e.printStackTrace();
-            // aggiunta un logger per loggare l'errore invece di stampare su console e inviare al client un messaggio di errore prima di chiudere la connessione
-            System.err.println("Error initializing ClientHandler: " + e.getMessage());
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (Exception e) {
+                System.err.println("Errore chiusura socket client: " + e.getMessage());
+            }
+
         }
     }
-
 }

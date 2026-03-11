@@ -3,6 +3,11 @@ package com.unito.client;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.regex.Pattern;
 
 public class LoginController {
@@ -29,6 +34,7 @@ public class LoginController {
                 javafx.stage.Stage stage = (javafx.stage.Stage) mailField.getScene().getWindow();
                 stage.setScene(inboxScene);
                 stage.setTitle("Mail Client - " + insertedMail);
+                notifyServerLoginClick(insertedMail);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -50,5 +56,25 @@ public class LoginController {
         return Pattern.matches(emailRegex, normalized);
     }
 
-}
+    private void notifyServerLoginClick(String email) {
+        try (
+                Socket socket = new Socket("127.0.0.1", 8090);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
+        ) {
+            out.println("LOGIN_CLICK|" + email);
+
+            String response = in.readLine();
+
+            if (!"OK".equals(response)) {
+                throw new RuntimeException("Il server ha risposto in modo non valido.");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Errore comunicazione client-server: " + e.getMessage());
+
+        }
+    }
+    }
+
 

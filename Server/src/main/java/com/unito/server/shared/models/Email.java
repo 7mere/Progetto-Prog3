@@ -1,16 +1,21 @@
-package com.unito.server.models;
+package com.unito.server.shared.models;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * model Email condiviso tra Client e Server
+ * Questa classe è serializzata a JSON per la comunicazione
+ */
+
 public class Email {
     private String id; // ID univoco, assegnato dal server
-    private String sender;
-    private List<String> recipients;
-    private String subject;
-    private String body;
-    private Date date;
+    private String sender; // indirizzo email del mittente
+    private List<String> recipients; // lista di indirizzi email dei destinatari, può essere più di uno per supportare CC e BCC in futuro
+    private String subject; // oggetto dell'email
+    private String body; // corpo dell'email
+    private Date date; // data di invio dell'email
     // private Boolean read; //Usato solo dal client, permette di capire se l'utente ha letto l'email oppure no
 
     // costruttore vuoto per Jackson (deserializzazione)
@@ -21,8 +26,8 @@ public class Email {
             List<String> recipients,
             String subject,
             String body) {
-        if(sender.isEmpty()) {throw new IllegalArgumentException("Sender cannot be empty");}
-        this.id = UUID.randomUUID().toString();
+        if(sender.isEmpty() || sender == null) {throw new IllegalArgumentException("Sender cannot be empty");}
+        this.id = UUID.randomUUID().toString(); // VEDERE SE FARLO QUI O AL SERVER 
         this.sender = sender;
         this.recipients = recipients;
         this.subject = subject;
@@ -51,10 +56,17 @@ public class Email {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o) { // per ottenere un metodo più robusto durante il confronto degli id  
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Email email = (Email) o;
-        return id.equals(email.id);
+        return id != null && id.equals(email.id);
     }
+    
+    /*
+     @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+    */
 }

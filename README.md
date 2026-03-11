@@ -121,7 +121,47 @@ Le istruzioni scritte in build.gradle dicono a Gradle cosa mettere in questa car
 
 - pom.xml: Si ha che Maven richiede Java 21 dalla parte del Server
 
-### Classe Email 
+### Persistenza dei file nel server
+Come fare? Meglio txt o binari? Oppure JSON
+
+### Protocollo di comunicazione tra client e server
+
+#### Protocollo di comunicazione client->server
+
+Il client invia vari comandi al server dove ognuno di questi definisce un tipo di operazione richiesta di controllo:
+- SEND: invio di messaggio, il client manda il comando SEND seguito 
+
+- CHECK <email> — verifica esistenza account.
+
+- risposta: OK o ERR:account-not-found
+
+- AUTH <email> — usato all'avvio per autenticare/identificare (server risponde OK/ERR)
+
+- FETCH_NEW <email> <lastKnownMessageId> — chiede solo messaggi non ancora inviati al client.
+
+    - risposta: MSG_LIST <n> seguito da n messaggi, ognuno con LENGTH:<bytes> + JSON
+
+    - oppure MSG_LIST 0
+
+- SEND — invio di messaggio: il client manda SEND poi LENGTH:<bytes> e poi JSON dell'Email. Server risponde per ogni destinatario DELIVERED <recipient> o FAILED <recipient> reason
+
+- DELETE <email> <messageId> — cancella messaggio dalla inbox server-side (o marca come cancellato)
+
+- PING — testa connessione
+
+- QUIT — chiude connessione
+
+
+Meglio usare una classe di richiesta e risposta che verrà messo in una libreria comune sia per il client che per il server? 
+Si usa una libreria comune tra client e server in modo che contenga tutto ciò che c'è di uguale tra i due e garantisce la stessa versione del protocollo, come i tipi di messaggio, comandi, classi che sono serializzate in JSON, costanti di protocollo??, degli helper per (de)serializzare il JSON 
+
+Libreria è una cartella chiamata shared che rappresenta il contratto tra client e server 
+Contiene:
+- il `models/` classi di dominio che vengono serializzate in JSON per la comunicazione client-server. In questo caso `Email.java`
+- il `protocol/` definisce struttura e regole di comunicazione tra client e server. Come `CommandOperation.java` `ProtocolConstants.java` `Message.java`
+- l'`utils/` helper per operazioni comuni tra client e server. Cioè il `JsonSerializer.java`
+
+#### Classe Email 
 
 Ho evitato Serializable perché la specifica richiede la trasmissione di dati testuali via socket. Inoltre Serializable introduce un forte accoppiamento tra client e server e rende il protocollo fragile ai cambiamenti. Ho preferito un protocollo testuale (JSON) che è più scalabile, debuggabile e aderente alle richieste; inoltre JSON resta preferibile (leggibile, ispezionabile) ma Serializable è accettabile per file binari.
 
@@ -151,6 +191,21 @@ Server aperto in backend nel metodo main() della classe ServerMain
 Uso di una libreria di mapping JSON per serializzare o deserializzare l'oggetto Email, in questo caso Jackson, che permetterà di trasformare l'oggetto in JSON o viceversa
 Aggiungendo una dipendenza all'interno di Maven
 
+#### Uso di Jackson
+Libreria Java per serializzare da oggetti Java a JSON e viceversa (deserializzare)
+Dipendenza Maven con Jackson
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+Uso della classe centrale: ObjectMapper mapper = new ObjectMapper();
+
+
 ### Thread e Thread Pool
 Si ha un solo thread che rimane in attessa di connessioni (accpet()) e li delega al pool di thread
 Si è aggiunto un pool di thread per gestire in maniera sincronizzata e parallela i task invitati per gestire la connessione fra il server e il client che l'ha richiesto
@@ -167,3 +222,12 @@ Inoltre nel ciclo principale c'è un timeout per poter controllare periodicament
 
 N.B. 
     il metodo start() che “avvia” il server non è mai invocato direttamente all’interno dello stesso ServerSocketManager; è sempre un altro thread (GUI o main) che lo richiama, mentre super.start() è quello che innesca la creazione del thread esecutore. Per il resto la logica di accettazione/dispatch all’interno di run() e il ruolo del pool sono esattamente come li hai spiegati.
+
+### Consigli da parte del client
+Usare Platform.runLater(() -> ...) per eseguire operazione di aggiornamento della UI da thread in background; permette di aggiornare l'interfaccia utente in modo reattivo
+
+
+RIVEDERE LA CREAZIONE DEGLI UTENTI
+
+
+CREARE LA LIBRERIA CONDIVISA PER ENTRAMBI E CONTROLLARE, LA PERSISTENZA JSON 

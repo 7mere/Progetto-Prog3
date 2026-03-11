@@ -14,8 +14,27 @@ public class LoginController {
     protected void onLoginButtonClick() {
         String insertedMail = mailField.getText();
         if(isValidEmail(insertedMail)) {
-            result.setText("L'indirizzo mail inserito è valido");
-        }else {
+            try {
+                // 1. Carica la vista della Inbox
+                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("inbox-view.fxml"));
+                javafx.scene.Scene inboxScene = new javafx.scene.Scene(loader.load(), 1100, 720);
+                inboxScene.getStylesheets().add(getClass().getResource("inbox.css").toExternalForm());
+
+                // ---- ECCO LE DUE RIGHE FONDAMENTALI CHE MANCAVANO ----
+                InboxController inboxController = loader.getController();
+                inboxController.initUser(insertedMail);
+                // -------------------------------------------------------
+
+                // 2. Cambia la scena nella finestra attuale
+                javafx.stage.Stage stage = (javafx.stage.Stage) mailField.getScene().getWindow();
+                stage.setScene(inboxScene);
+                stage.setTitle("Mail Client - " + insertedMail);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                result.setText("Errore nel caricamento della Inbox.");
+            }
+        } else {
             result.setText("La mail non è valida prova con un'altra");
             mailField.clear();
         }

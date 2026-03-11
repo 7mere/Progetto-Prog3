@@ -51,7 +51,7 @@
                 </padding>
                 <Label fx:id="notificationLabel" text="Hai ricevuto un nuovo messaggio!" styleClass="notification-text"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button fx:id="dismissNotificationButton" text="OK" styleClass="btn"/>
+                <Button fx:id="dismissNotificationButton" text="OK" onAction="#onDismissNotificationClick" styleClass="btn"/>
             </HBox>
 
             <!-- Area errori -->
@@ -98,10 +98,10 @@
                     </TableView>
 
                     <HBox spacing="10.0" alignment="CENTER_RIGHT">
-                        <Button fx:id="deleteButton" text="Elimina" disable="true" styleClass="btn-danger"/>
-                        <Button fx:id="replyButton" text="Reply" disable="true" styleClass="btn"/>
-                        <Button fx:id="replyAllButton" text="Reply-All" disable="true" styleClass="btn"/>
-                        <Button fx:id="forwardButton" text="Forward" disable="true" styleClass="btn"/>
+                        <Button fx:id="deleteButton" text="Elimina" disable="true" onAction="#onDeleteClick" styleClass="btn-danger"/>
+                        <Button fx:id="replyButton" text="Reply" disable="true" onAction="#onReplyClick" styleClass="btn"/>
+                        <Button fx:id="replyAllButton" text="Reply-All" disable="true" onAction="#onReplyAllClick" styleClass="btn"/>
+                        <Button fx:id="forwardButton" text="Forward" disable="true" onAction="#onForwardClick" styleClass="btn"/>
                     </HBox>
                 </VBox>
 
@@ -156,7 +156,7 @@
 
                                     <bottom>
                                         <HBox spacing="10.0" alignment="CENTER_RIGHT">
-                                            <Button fx:id="composeNewButton" text="Nuovo messaggio" styleClass="btn-primary"/>
+                                            <Button fx:id="composeNewButton" text="Nuovo messaggio" onAction="#onComposeNewClick" styleClass="btn-primary"/>
                                         </HBox>
                                     </bottom>
 
@@ -212,8 +212,8 @@
                                            styleClass="error-label"/>
 
                                     <HBox spacing="10.0" alignment="CENTER_RIGHT">
-                                        <Button fx:id="clearComposeButton" text="Pulisci" styleClass="btn"/>
-                                        <Button fx:id="sendButton" text="Invia" defaultButton="true" styleClass="btn-primary"/>
+                                        <Button fx:id="clearComposeButton" text="Pulisci" onAction="#onClearComposeClick" styleClass="btn"/>
+                                        <Button fx:id="sendButton" text="Invia" defaultButton="true" onAction="#onSendClick" styleClass="btn-primary"/>
                                     </HBox>
                                 </VBox>
                             </Tab>

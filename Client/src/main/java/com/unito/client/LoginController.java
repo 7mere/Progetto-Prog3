@@ -58,23 +58,30 @@ public class LoginController {
 
     private void notifyServerLoginClick(String email) {
         try (
-                Socket socket = new Socket("127.0.0.1", 8090);
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
+                java.net.Socket socket = new java.net.Socket("127.0.0.1", 8090);
+                java.io.PrintWriter out = new java.io.PrintWriter(socket.getOutputStream(), true);
+                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))
         ) {
-            out.println("LOGIN_CLICK|" + email);
+            com.unito.client.shared.protocol.Message request = new com.unito.client.shared.protocol.Message(
+                    com.unito.client.shared.protocol.CommandOperation.LOGIN.getCode(),
+                    com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK,
+                    email
+            );
+            out.println(com.unito.client.shared.utils.JsonSerializer.serialize(request));
 
-            String response = in.readLine();
-
-            if (!"OK".equals(response)) {
-                throw new RuntimeException("Il server ha risposto in modo non valido.");
+            String jsonResponse = in.readLine();
+            if (jsonResponse != null) {
+                com.unito.client.shared.protocol.Message response = com.unito.client.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.client.shared.protocol.Message.class);
+                if (response.getStatus() != com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK) {
+                    throw new RuntimeException("Il server ha rifiutato il login.");
+                }
+            } else {
+                throw new RuntimeException("Nessuna risposta dal server.");
             }
-
         } catch (Exception e) {
             System.err.println("Errore comunicazione client-server: " + e.getMessage());
-
         }
     }
-    }
+}
 
 

@@ -288,50 +288,81 @@ public class InboxController {
 
     @FXML
     private void onSendClick() {
-
-        // 1. Controllo validità sintattica prima di fare qualsiasi cosa
         String toAddress = toField.getText();
 
         if (!areValidEmails(toAddress)) {
-            // Mostriamo l'errore nell'apposita label rossa che avevate preparato
-            addressValidationLabel.setText("Errore: uno o più indirizzi di destinazione non sono validi!");
+            addressValidationLabel.setText("Errore: indirizzi di destinazione non validi!");
             addressValidationLabel.setVisible(true);
             addressValidationLabel.setManaged(true);
-            return; // Interrompe il metodo, così non invia nulla!
+            return;
         }
 
-        // Se va tutto bene, nascondiamo l'errore (se era visibile da prima)
         addressValidationLabel.setVisible(false);
         addressValidationLabel.setManaged(false);
 
-        // 1. Disabilita il bottone invia e mostra lo spinner
         sendButton.setDisable(true);
         busyIndicator.setVisible(true);
         busyIndicator.setManaged(true);
         statusBarLabel.setText("Invio messaggio in corso...");
 
-        // 2. Crea un Task per simulare il lavoro in background senza bloccare la grafica
+        // 1. Creiamo la mail con i dati presi dalla grafica
+        EmailClient emailDaInviare = new EmailClient();
+        // AGGIUNGI QUESTA RIGA PER GENERARE UN ID UNIVOCO:
+        emailDaInviare.setId(java.util.UUID.randomUUID().toString());
+        // AGGIUNGI QUESTA RIGA PER LA DATA:
+        emailDaInviare.setDate(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        emailDaInviare.setSender(currentUserEmail);
+        emailDaInviare.setSubject(subjectField.getText() != null ? subjectField.getText() : "");
+        emailDaInviare.setBody(bodyArea.getText() != null ? bodyArea.getText() : "");
+
+        java.util.List<String> destinatari = new java.util.ArrayList<>();
+        for (String addr : toAddress.split(",")) {
+            destinatari.add(addr.trim());
+        }
+        // Se c'è qualcosa nel campo opzionale Cc, lo aggiungiamo
+        if (ccField.getText() != null && !ccField.getText().trim().isEmpty()) {
+            for (String addr : ccField.getText().split(",")) {
+                destinatari.add(addr.trim());
+            }
+        }
+        emailDaInviare.setRecipients(destinatari);
+
+        // 2. Task in background per la vera chiamata di rete
         javafx.concurrent.Task<Void> sendTask = new javafx.concurrent.Task<>() {
             @Override
             protected Void call() throws Exception {
-                Thread.sleep(1500); // Finge di metterci 1.5 secondi per inviare al server
+                // CHIAMATA VERA AL SERVER! (Addio Thread.sleep!)
+                boolean success = mailService.sendEmail(emailDaInviare);
+                if (!success) {
+                    throw new Exception("Errore restituito dal server.");
+                }
                 return null;
             }
         };
 
-        // 3. Cosa fare quando ha finito
+        // 3. Cosa fare se il server accetta la mail
         sendTask.setOnSucceeded(e -> {
             sendButton.setDisable(false);
             busyIndicator.setVisible(false);
             busyIndicator.setManaged(false);
             statusBarLabel.setText("Messaggio inviato con successo!");
 
-            // Pulisce e torna ai dettagli
             onClearComposeClick();
             rightTabPane.getSelectionModel().select(0);
         });
 
-        // 4. Avvia il thread
+        // 4. Cosa fare se il server è irraggiungibile o rifiuta
+        sendTask.setOnFailed(e -> {
+            sendButton.setDisable(false);
+            busyIndicator.setVisible(false);
+            busyIndicator.setManaged(false);
+            statusBarLabel.setText("Errore nell'invio del messaggio!");
+
+            addressValidationLabel.setText("Errore di rete durante l'invio.");
+            addressValidationLabel.setVisible(true);
+            addressValidationLabel.setManaged(true);
+        });
+
         new Thread(sendTask).start();
     }
 
@@ -382,23 +413,49 @@ public class InboxController {
         Thread pollingThread = new Thread(() -> {
             while (true) {
                 try {
-                    // Aspetta 5 secondi
                     Thread.sleep(5000);
-
-                    // Chiede al server
+                    // Chiede le mail al server
                     List<EmailClient> nuoveMail = mailService.fetchNewEmails(currentUserEmail);
 
-                    if (!nuoveMail.isEmpty()) {
-                        javafx.application.Platform.runLater(() -> {
-                            emailList.addAll(nuoveMail);
-                            lastUpdateLabel.setText(java.time.LocalTime.now().toString());
+                    // AGGIUNTA: Se arriviamo qui senza errori, siamo connessi! Coloriamo di VERDE.
+                    javafx.application.Platform.runLater(() -> {
+                        connectionDot.setFill(javafx.scene.paint.Color.GREEN);
+                        connectionStatusLabel.setText("CONNESSO");
+                        errorLabel.setVisible(false);
+                        errorLabel.setManaged(false);
+
+                        // RISOLUZIONE BUG DUPLICATI:
+                        boolean aggiunteNuove = false;
+
+                        for (EmailClient serverMail : nuoveMail) {
+                            // Controlliamo se questa mail è già nella nostra lista a schermo
+                            boolean giaPresente = false;
+                            for (EmailClient localMail : emailList) {
+                                // Confrontiamo gli ID univoci delle mail
+                                if (localMail.getId() != null && localMail.getId().equals(serverMail.getId())) {
+                                    giaPresente = true;
+                                    break;
+                                }
+                            }
+
+                            // Se l'ID non c'era, è una mail davvero nuova!
+                            if (!giaPresente) {
+                                emailList.add(0, serverMail); // add(0) la inserisce in cima alla tabella!
+                                aggiunteNuove = true;
+                            }
+                        }
+
+                        // Aggiorniamo la notifica e l'orario SOLO se abbiamo effettivamente scaricato qualcosa di nuovo
+                        if (aggiunteNuove) {
+                            lastUpdateLabel.setText(java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
                             notificationBar.setVisible(true);
                             notificationBar.setManaged(true);
-                        });
-                    }
+                        }
+                    });
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
+                    // Se la rete cade, torna ROSSO
                     javafx.application.Platform.runLater(() -> {
                         connectionDot.setFill(javafx.scene.paint.Color.RED);
                         connectionStatusLabel.setText("DISCONNESSO");

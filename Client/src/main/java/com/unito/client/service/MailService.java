@@ -101,6 +101,7 @@ public class MailService {
         pojo.setSubject(client.getSubject());
         pojo.setBody(client.getBody());
         pojo.setRecipients(client.getRecipients());
+        //pojo.setDate(client.getDate());
         return pojo;
     }
 }

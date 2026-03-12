@@ -15,7 +15,7 @@ public class JsonSerializer {
         objectMapper = new ObjectMapper();
 
         // Abilita la formatazzione di JSON più leggibile
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        //objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
         // Non lancia errore se nel JSON ci sono campi che non esistono nella classe
         // objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);

@@ -68,19 +68,37 @@ public class ServerStorage {
         return true;
     }
 
-    /**
-     * Quando un utente ELIMINA una mail, questo metodo la rimuove dal suo file.
-     */
-    public synchronized boolean deleteEmail(String userEmail, String emailId) {
-        List<Email> inbox = loadUserEmails(userEmail);
-
-        // Cerca l'email con quell'ID e la rimuove
-        boolean removed = inbox.removeIf(email -> email.getId().equals(emailId));
+    public synchronized boolean deleteEmail(String userEmail, String idToDelete) {
+        List<Email> emails = loadUserEmails(userEmail);
+        // Cerchiamo la mail che ha l'ID corrispondente e la rimuoviamo dalla lista
+        boolean removed = emails.removeIf(e -> e.getId() != null && e.getId().equals(idToDelete));
 
         if (removed) {
-            saveUserEmails(userEmail, inbox);
-            HelloController.getInstance().logMessage("Mail eliminata per: " + userEmail);
+            saveUserEmails(userEmail, emails); // Salviamo la lista aggiornata (senza quella mail) sul disco
+            HelloController.getInstance().logMessage("Mail eliminata da: " + userEmail );
         }
         return removed;
+    }
+
+    /**
+     * Restituisce solo le email che non sono ancora state inviate al client.
+     */
+    public synchronized List<Email> getNewEmails(String userEmail) {
+        List<Email> allEmails = loadUserEmails(userEmail); // Carica tutto il file
+        List<Email> toSend = new java.util.ArrayList<>();
+
+        for (Email e : allEmails) {
+            if (!e.isDistributed()) {
+                toSend.add(e);
+                e.setDistributed(true); // La segnamo come "consegnata"
+            }
+        }
+
+        // Se abbiamo trovato mail nuove, aggiorniamo il file JSON sul disco
+        if (!toSend.isEmpty()) {
+            saveUserEmails(userEmail, allEmails);
+        }
+
+        return toSend;
     }
 }

@@ -79,6 +79,31 @@ public class MailService {
         return false;
     }
 
+    public boolean deleteEmail(String userEmail, String emailId) throws Exception {
+        try (java.net.Socket socket = new java.net.Socket(SERVER_IP, SERVER_PORT);
+             java.io.PrintWriter out = new java.io.PrintWriter(socket.getOutputStream(), true);
+             java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))) {
+
+            // Prepariamo i dati: chi è l'utente e quale mail vuole cancellare
+            String[] payload = { userEmail, emailId };
+
+            com.unito.client.shared.protocol.Message request = new com.unito.client.shared.protocol.Message(
+                    com.unito.client.shared.protocol.CommandOperation.DELETE.getCode(),
+                    com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK,
+                    com.unito.client.shared.utils.JsonSerializer.serialize(payload)
+            );
+
+            out.println(com.unito.client.shared.utils.JsonSerializer.serialize(request));
+
+            String jsonResponse = in.readLine();
+            if (jsonResponse != null) {
+                com.unito.client.shared.protocol.Message resp = com.unito.client.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.client.shared.protocol.Message.class);
+                return resp.getStatus() == com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK;
+            }
+        }
+        return false;
+    }
+
     // --- METODI "TRADUTTORI" (MAPPER) ---
 
     // Da Email del Server a EmailClient (per la GUI)
@@ -101,7 +126,17 @@ public class MailService {
         pojo.setSubject(client.getSubject());
         pojo.setBody(client.getBody());
         pojo.setRecipients(client.getRecipients());
-        //pojo.setDate(client.getDate());
+        // Convertiamo la Stringa della grafica nella Data del Server (java.util.Date)
+        if (client.getDate() != null && !client.getDate().isEmpty()) {
+            try {
+                java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+                pojo.setDate(formatter.parse(client.getDate()));
+            } catch (Exception e) {
+                pojo.setDate(new java.util.Date()); // Se c'è errore, mette la data di adesso
+            }
+        } else {
+            pojo.setDate(new java.util.Date()); // Se è vuota, mette la data di adesso
+        }
         return pojo;
     }
 }

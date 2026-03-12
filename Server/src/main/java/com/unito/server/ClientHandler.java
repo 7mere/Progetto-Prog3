@@ -54,17 +54,13 @@ public class ClientHandler implements Runnable {
                         break;
 
                     case FETCH_NEW:
-                        // Il Client ci ha mandato la sua email nel campo 'data'
                         String userToFetch = request.getData();
 
-                        // Chiediamo al database le email di quell'utente
-                        List<Email> inbox = model.loadUserEmails(userToFetch);
+                        // USIAMO IL NUOVO METODO FILTRATO
+                        List<Email> inbox = model.getNewEmails(userToFetch);
 
                         response.setStatus(ProtocolConstants.STATUS_OK);
-                        // Inseriamo la lista di email trasformata in JSON dentro la busta
                         response.setData(JsonSerializer.serialize(inbox));
-
-                        HelloController.getInstance().logMessage("Inviate " + inbox.size() + " email a " + userToFetch);
                         break;
 
                     case SEND:
@@ -79,6 +75,18 @@ public class ClientHandler implements Runnable {
                         response.setStatus(ProtocolConstants.STATUS_OK);
                         response.setData("Email elaborata con successo");
                         HelloController.getInstance().logMessage("Email inviata da " + emailToSend.getSender() + " a " + emailToSend.getRecipients());
+                        break;
+
+                    case DELETE:
+                        // Il client manda un array JSON: ["email_utente", "id_mail"]
+                        String[] data = JsonSerializer.deserialize(request.getData(), String[].class);
+                        String user = data[0];
+                        String id = data[1];
+
+                        boolean ok = model.deleteEmail(user, id);
+
+                        response.setStatus(ok ? ProtocolConstants.STATUS_OK : ProtocolConstants.STATUS_BAD_REQUEST);
+                        response.setData(ok ? "Eliminata" : "Errore: mail non trovata");
                         break;
 
                     default:

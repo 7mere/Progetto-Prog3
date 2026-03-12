@@ -268,22 +268,25 @@ public class InboxController {
     @FXML
     private void onDeleteClick() {
         EmailClient selected = messageTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            // Rimuove la mail dalla lista osservabile (la tabella si aggiornerà da sola!)
-            emailList.remove(selected);
+        if (selected == null) return; // Se non c'è nulla di selezionato, non facciamo niente
 
-            // Svuota i dettagli a destra
-            detailFromLabel.setText("-");
-            detailSubjectLabel.setText("-");
-            detailDateLabel.setText("-");
-            detailBodyArea.clear();
+        // Usiamo un Task per non "congelare" la grafica mentre la rete lavora
+        javafx.concurrent.Task<Boolean> deleteTask = new javafx.concurrent.Task<>() {
+            @Override
+            protected Boolean call() throws Exception {
+                return mailService.deleteEmail(currentUserEmail, selected.getId());
+            }
+        };
 
-            // Disabilita di nuovo i bottoni perché non c'è più nulla di selezionato
-            deleteButton.setDisable(true);
-            replyButton.setDisable(true);
-            replyAllButton.setDisable(true);
-            forwardButton.setDisable(true);
-        }
+        deleteTask.setOnSucceeded(e -> {
+            if (deleteTask.getValue()) {
+                emailList.remove(selected); // Rimuoviamo la mail dalla tabella visiva
+                messageTable.getSelectionModel().clearSelection();
+                statusBarLabel.setText("Email eliminata correttamente.");
+            }
+        });
+
+        new Thread(deleteTask).start();
     }
 
     @FXML

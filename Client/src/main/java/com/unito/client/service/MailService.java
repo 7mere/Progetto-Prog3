@@ -1,58 +1,106 @@
 package com.unito.client.service;
 
 import com.unito.client.models.EmailClient;
-import java.io.*;
+import com.unito.client.shared.models.Email;
+import com.unito.client.shared.protocol.CommandOperation;
+import com.unito.client.shared.protocol.Message;
+import com.unito.client.shared.protocol.ProtocolConstants;
+import com.unito.client.shared.utils.JsonSerializer;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MailService {
 
-    // Indirizzo e porta del vostro Server (da accordare col compagno!)
-    private static final String SERVER_IP = "127.0.0.1"; // Localhost per ora
+    private static final String SERVER_IP = "127.0.0.1";
     private static final int SERVER_PORT = 8090;
 
     /**
-     * Metodo per chiedere al server le nuove mail.
-     * @param userEmail L'email dell'utente attualmente loggato
-     * @return Una lista di nuove email
+     * Chiede al server le nuove email.
      */
     public List<EmailClient> fetchNewEmails(String userEmail) throws Exception {
         List<EmailClient> newEmails = new ArrayList<>();
 
-        // 1. Apro una connessione "usa e getta" (come richiesto dalle specifiche)
         try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // 2. Mando la richiesta al Server (Es. formato JSON o testo semplice)
-            // In attesa della libreria del vostro compagno, facciamo finta di mandare un comando:
-            out.println("FETCH|" + userEmail);
+            // 1. Creiamo il pacchetto di richiesta usando le classi condivise
+            Message request = new Message(CommandOperation.FETCH_NEW.getCode(), ProtocolConstants.STATUS_OK, userEmail);
+            out.println(JsonSerializer.serialize(request)); // Inviamo il JSON al server
 
-            // 3. Leggo la risposta dal Server
-            String response = in.readLine();
+            // 2. Leggiamo la risposta
+            String jsonResponse = in.readLine();
+            if (jsonResponse != null) {
+                // Trasformiamo il JSON ricevuto in un oggetto Message
+                Message response = JsonSerializer.deserialize(jsonResponse, Message.class);
 
-            // Qui in futuro trasformerete il JSON ricevuto (response) in oggetti EmailClient!
-            // Per ora lasciamo la lista vuota, la riempiremo quando il Server sarà pronto.
+                if (response.getStatus() == ProtocolConstants.STATUS_OK && response.getData() != null) {
+                    // Estraiamo l'array di Email "semplici" dal campo data
+                    Email[] serverEmails = JsonSerializer.deserialize(response.getData(), Email[].class);
+
+                    // Le traduciamo in EmailClient per la nostra interfaccia grafica!
+                    for (Email pojo : serverEmails) {
+                        newEmails.add(mapToClient(pojo));
+                    }
+                }
+            }
         }
-        // Il blocco try-with-resources chiude il Socket in automatico alla fine!
-
         return newEmails;
     }
 
     /**
-     * Metodo per inviare una mail.
+     * Invia una mail al server.
      */
-    public boolean sendEmail(EmailClient email) throws Exception {
+    public boolean sendEmail(EmailClient emailClient) throws Exception {
         try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // Anche qui, manderete il vostro JSON
-            out.println("SEND|" + email.getSender() + "|" + email.getSubject());
+            // 1. Traduciamo la nostra EmailClient in una Email "semplice" per il server
+            Email pojo = mapToPOJO(emailClient);
 
-            String response = in.readLine();
-            return "OK".equals(response);
+            // 2. Impacchettiamo e inviamo
+            String emailJson = JsonSerializer.serialize(pojo);
+            Message request = new Message(CommandOperation.SEND.getCode(), ProtocolConstants.STATUS_OK, emailJson);
+            out.println(JsonSerializer.serialize(request));
+
+            // 3. Leggiamo se è andata a buon fine
+            String jsonResponse = in.readLine();
+            if (jsonResponse != null) {
+                Message response = JsonSerializer.deserialize(jsonResponse, Message.class);
+                return response.getStatus() == ProtocolConstants.STATUS_OK;
+            }
         }
+        return false;
+    }
+
+    // --- METODI "TRADUTTORI" (MAPPER) ---
+
+    // Da Email del Server a EmailClient (per la GUI)
+    private EmailClient mapToClient(Email pojo) {
+        EmailClient client = new EmailClient();
+        client.setId(pojo.getId());
+        client.setSender(pojo.getSender());
+        client.setSubject(pojo.getSubject());
+        client.setBody(pojo.getBody());
+        client.setDate(pojo.getDate() != null ? pojo.getDate().toString() : "");
+        client.setRecipients(pojo.getRecipients());
+        return client;
+    }
+
+    // Da EmailClient a Email del Server (per inviarla via rete)
+    private Email mapToPOJO(EmailClient client) {
+        Email pojo = new Email();
+        pojo.setId(client.getId());
+        pojo.setSender(client.getSender());
+        pojo.setSubject(client.getSubject());
+        pojo.setBody(client.getBody());
+        pojo.setRecipients(client.getRecipients());
+        return pojo;
     }
 }

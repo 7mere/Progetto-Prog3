@@ -50,20 +50,26 @@ public class ClientHandler implements Runnable {
                 switch (command) {
                     case LOGIN:
                         String userEmail = request.getData();
-                        response.setStatus(ProtocolConstants.STATUS_OK);
-                        response.setData("Login effettuato con successo");
-                        HelloController.getInstance().logMessage("Utente loggato: " + userEmail);
+
+                        if(model.userExists(userEmail)) {
+                            response.setStatus(ProtocolConstants.STATUS_OK);
+                            response.setData("Login effettuato con successo");
+                            HelloController.getInstance().logMessage("Utente loggato: " + userEmail);
+                        } 
+                        else {
+                            response.setStatus(ProtocolConstants.STATUS_NOT_FOUND);
+                            response.setData("Utente non registrato");
+                            HelloController.getInstance().logMessage("Login fallito: utente inesistente " + userEmail);
+                        }
                         break;
 
                     case FETCH_NEW:
-                        // Il Client ci ha mandato la sua email nel campo 'data'
                         String userToFetch = request.getData();
 
-                        // Chiediamo al database le email di quell'utente
-                        List<Email> inbox = model.loadUserEmails(userToFetch);
+                        // USIAMO IL NUOVO METODO FILTRATO
+                        List<Email> inbox = model.getNewEmails(userToFetch);
 
                         response.setStatus(ProtocolConstants.STATUS_OK);
-                        // Inseriamo la lista di email trasformata in JSON dentro la busta
                         response.setData(JsonSerializer.serialize(inbox));
 
                         // HelloController.getInstance().logMessage("Inviate " + inbox.size() + " email a " + userToFetch);
@@ -75,12 +81,26 @@ public class ClientHandler implements Runnable {
 
                         // Salviamo la mail nel file di ogni destinatario
                         for (String recipient : emailToSend.getRecipients()) {
-                            model.addEmailToInbox(recipient.trim(), emailToSend);
+                            if(model.userExists(recipient.trim())) {
+                                model.addEmailToInbox(recipient.trim(), emailToSend);
+                            }
                         }
 
                         response.setStatus(ProtocolConstants.STATUS_OK);
                         response.setData("Email elaborata con successo");
                         HelloController.getInstance().logMessage("Email inviata da " + emailToSend.getSender() + " a " + emailToSend.getRecipients());
+                        break;
+
+                    case DELETE:
+                        // Il client manda un array JSON: ["email_utente", "id_mail"]
+                        String[] data = JsonSerializer.deserialize(request.getData(), String[].class);
+                        String user = data[0];
+                        String id = data[1];
+
+                        boolean ok = model.deleteEmail(user, id);
+
+                        response.setStatus(ok ? ProtocolConstants.STATUS_OK : ProtocolConstants.STATUS_BAD_REQUEST);
+                        response.setData(ok ? "Eliminata" : "Errore: mail non trovata");
                         break;
 
                     default:

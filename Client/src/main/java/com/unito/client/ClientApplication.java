@@ -15,6 +15,10 @@ public class ClientApplication extends Application {
         scene.getStylesheets().add(getClass().getResource("login.css").toExternalForm());
         stage.setTitle("Login");
         stage.setScene(scene);
+        stage.setOnCloseRequest(event -> {
+            javafx.application.Platform.exit();
+            System.exit(0); // Forza lo spegnimento di tutti i thread di rete
+        });
         stage.show();
     }
 }

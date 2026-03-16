@@ -10,6 +10,7 @@ import java.util.UUID;
  */
 
 public class Email {
+    private boolean distributed = false;
     private String id; // ID univoco, assegnato dal server
     private String sender; // indirizzo email del mittente
     private List<String> recipients; // lista di indirizzi email dei destinatari, può essere più di uno per supportare CC e BCC in futuro
@@ -49,6 +50,8 @@ public class Email {
     public void setBody(String body) {this.body = body;}
     public Date getDate() {return date;}
     public void setDate(Date date) {this.date = date;}
+    public boolean isDistributed() { return distributed; }
+    public void setDistributed(boolean distributed) { this.distributed = distributed; }
 
     @Override
     public String toString() {

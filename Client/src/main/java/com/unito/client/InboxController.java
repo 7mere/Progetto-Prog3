@@ -247,43 +247,46 @@ public class InboxController {
 
     @FXML
     private void onReplyClick() {
-        // 1. Prendi la mail attualmente selezionata nella tabella
-        EmailClient selectedEmail = messageTable.getSelectionModel().getSelectedItem();
+        EmailClient selected = messageTable.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
 
-        if (selectedEmail != null) {
-            // 2. Cambia tab
-            rightTabPane.getSelectionModel().select(1);
+        // Cambia tab e imposta la label in alto
+        rightTabPane.getSelectionModel().select(1);
+        composeModeLabel.setText("Modalità: REPLY");
 
-            // 3. Precompila i campi
-            composeModeLabel.setText("Modalità: REPLY");
-            toField.setText(selectedEmail.getSender()); // Rispondo al mittente!
-            subjectField.setText("Re: " + selectedEmail.getSubject());
+        // Compila i campi
+        toField.setText(selected.getSender());
 
-            // 4. Inserisco il messaggio originale sotto
-            bodyArea.setText("\n\n--- Messaggio Originale ---\n" + selectedEmail.getBody());
-            bodyArea.positionCaret(0); // Mette il cursore del mouse all'inizio per scrivere
-        }
+        String subject = selected.getSubject() != null ? selected.getSubject() : "";
+        subjectField.setText(subject.startsWith("Re:") ? subject : "Re: " + subject);
+
+        // Prepara il testo citando il messaggio originale
+        bodyArea.setText("\n\n--- Messaggio Originale ---\nDa: " + selected.getSender() + "\nData: " + selected.getDate() + "\n\n" + selected.getBody());
+        bodyArea.positionCaret(0); // Mette il cursore pronto in alto per scrivere
     }
 
     @FXML
     private void onDeleteClick() {
         EmailClient selected = messageTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            // Rimuove la mail dalla lista osservabile (la tabella si aggiornerà da sola!)
-            emailList.remove(selected);
+        if (selected == null) return; // Se non c'è nulla di selezionato, non facciamo niente
 
-            // Svuota i dettagli a destra
-            detailFromLabel.setText("-");
-            detailSubjectLabel.setText("-");
-            detailDateLabel.setText("-");
-            detailBodyArea.clear();
+        // Usiamo un Task per non "congelare" la grafica mentre la rete lavora
+        javafx.concurrent.Task<Boolean> deleteTask = new javafx.concurrent.Task<>() {
+            @Override
+            protected Boolean call() throws Exception {
+                return mailService.deleteEmail(currentUserEmail, selected.getId());
+            }
+        };
 
-            // Disabilita di nuovo i bottoni perché non c'è più nulla di selezionato
-            deleteButton.setDisable(true);
-            replyButton.setDisable(true);
-            replyAllButton.setDisable(true);
-            forwardButton.setDisable(true);
-        }
+        deleteTask.setOnSucceeded(e -> {
+            if (deleteTask.getValue()) {
+                emailList.remove(selected); // Rimuoviamo la mail dalla tabella visiva
+                messageTable.getSelectionModel().clearSelection();
+                statusBarLabel.setText("Email eliminata correttamente.");
+            }
+        });
+
+        new Thread(deleteTask).start();
     }
 
     @FXML
@@ -369,33 +372,49 @@ public class InboxController {
     @FXML
     private void onForwardClick() {
         EmailClient selected = messageTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            rightTabPane.getSelectionModel().select(1);
-            composeModeLabel.setText("Modalità: FORWARD");
+        if (selected == null) return;
 
-            toField.clear(); // Il destinatario è vuoto perché lo sto inoltrando a un amico
-            subjectField.setText("Fwd: " + selected.getSubject());
+        rightTabPane.getSelectionModel().select(1);
+        composeModeLabel.setText("Modalità: FORWARD");
 
-            bodyArea.setText("\n\n--- Messaggio Inoltrato ---\nDa: " + selected.getSender() + "\nData: " + selected.getDate() + "\n\n" + selected.getBody());
-            bodyArea.positionCaret(0);
-        }
+        // Lasciamo il destinatario vuoto per permetterti di inserirlo
+        toField.clear();
+
+        String subject = selected.getSubject() != null ? selected.getSubject() : "";
+        subjectField.setText(subject.startsWith("Fwd:") ? subject : "Fwd: " + subject);
+
+        bodyArea.setText("\n\n--- Messaggio Inoltrato ---\nDa: " + selected.getSender() + "\nData: " + selected.getDate() + "\n\n" + selected.getBody());
+        bodyArea.positionCaret(0);
     }
 
     @FXML
     private void onReplyAllClick() {
         EmailClient selected = messageTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            rightTabPane.getSelectionModel().select(1);
-            composeModeLabel.setText("Modalità: REPLY-ALL");
+        if (selected == null) return;
 
-            // Per ora mettiamo il mittente originale.
-            // In futuro qui aggiungeremo anche gli altri destinatari leggendo selected.getRecipients()
-            toField.setText(selected.getSender());
-            subjectField.setText("Re: " + selected.getSubject());
+        rightTabPane.getSelectionModel().select(1);
+        composeModeLabel.setText("Modalità: REPLY-ALL");
 
-            bodyArea.setText("\n\n--- Messaggio Originale ---\n" + selected.getBody());
-            bodyArea.positionCaret(0);
+        // Creiamo la lista di tutti quelli a cui rispondere
+        java.util.List<String> tuttiDestinatari = new java.util.ArrayList<>();
+        tuttiDestinatari.add(selected.getSender()); // Aggiungiamo il mittente
+
+        // Aggiungiamo gli altri destinatari originali (se ci sono e se non siamo noi)
+        if (selected.getRecipients() != null) {
+            for (String rec : selected.getRecipients()) {
+                if (!rec.equals(currentUserEmail) && !tuttiDestinatari.contains(rec)) {
+                    tuttiDestinatari.add(rec);
+                }
+            }
         }
+
+        toField.setText(String.join(", ", tuttiDestinatari));
+
+        String subject = selected.getSubject() != null ? selected.getSubject() : "";
+        subjectField.setText(subject.startsWith("Re:") ? subject : "Re: " + subject);
+
+        bodyArea.setText("\n\n--- Messaggio Originale ---\nDa: " + selected.getSender() + "\nData: " + selected.getDate() + "\n\n" + selected.getBody());
+        bodyArea.positionCaret(0);
     }
 
     // ... i tuoi metodi precedenti (es. onSendClick, onReplyClick...)

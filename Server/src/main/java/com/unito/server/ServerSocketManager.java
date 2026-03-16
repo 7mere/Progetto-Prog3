@@ -7,8 +7,9 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import com.unito.server.models.ServerStorage;
-import com.unito.server.ClientHandler; // classe che gestisce la logica di comunicazione con i client, da implementare
+
+import com.unito.server.models.ServerStorage; // classe che gestisce la logica di comunicazione con i client, da implementare
+
 
 public class ServerSocketManager extends Thread {
     private final int port;

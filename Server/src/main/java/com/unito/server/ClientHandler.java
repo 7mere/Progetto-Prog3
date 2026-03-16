@@ -4,8 +4,14 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 
 import com.unito.server.models.ServerStorage;
+import com.unito.server.shared.models.Email;
+import com.unito.server.shared.protocol.CommandOperation;
+import com.unito.server.shared.protocol.Message;
+import com.unito.server.shared.protocol.ProtocolConstants;
+import com.unito.server.shared.utils.JsonSerializer;
 
 public class ClientHandler implements Runnable {
 
@@ -24,32 +30,79 @@ public class ClientHandler implements Runnable {
                 PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true) // writer per inviare i messaggi al client
                                                                                         // true per abilitare l'auto-flush, così ogni volta che scriviamo qualcosa con writer.println() viene inviato immediatamente al client senza dover chiamare writer.flush() manualmente
         ) {
-            String request = reader.readLine();
 
-            if (request != null) {
-                System.out.println("Richiesta ricevuta dal client: " + request);
+            // Leggiamo la stringa inviata dal Client
+            String requestJson = reader.readLine();
 
-                if (request.startsWith("LOGIN_CLICK|")) {
-                    String email = request.substring("LOGIN_CLICK|".length());
-                    System.out.println("L'utente " + email + " ha cliccato su login");
-                    writer.println("OK");
-                } else {
-                    System.out.println("Comando non riconosciuto");
-                    writer.println("ERR");
+            if (requestJson != null) {
+                // 1. TRADUZIONE: Trasformiamo il JSON in un oggetto Message
+                Message request = JsonSerializer.deserialize(requestJson, Message.class);
+                CommandOperation command = CommandOperation.fromCode(request.getCommand());
+
+                // Log visivo sulla console del Server!
+                HelloController.getInstance().logMessage("Ricevuto comando " + command.getCode() + " da un client.");
+
+                // Prepariamo la busta per la risposta
+                Message response = new Message();
+                response.setCommand(command.getCode());
+
+                // 2. LO SWITCH: Decidiamo cosa fare in base al comando
+                switch (command) {
+                    case LOGIN:
+                        String userEmail = request.getData();
+                        response.setStatus(ProtocolConstants.STATUS_OK);
+                        response.setData("Login effettuato con successo");
+                        HelloController.getInstance().logMessage("Utente loggato: " + userEmail);
+                        break;
+
+                    case FETCH_NEW:
+                        // Il Client ci ha mandato la sua email nel campo 'data'
+                        String userToFetch = request.getData();
+
+                        // Chiediamo al database le email di quell'utente
+                        List<Email> inbox = model.loadUserEmails(userToFetch);
+
+                        response.setStatus(ProtocolConstants.STATUS_OK);
+                        // Inseriamo la lista di email trasformata in JSON dentro la busta
+                        response.setData(JsonSerializer.serialize(inbox));
+
+                        // HelloController.getInstance().logMessage("Inviate " + inbox.size() + " email a " + userToFetch);
+                        break;
+
+                    case SEND:
+                        // Estraiamo l'oggetto Email dal campo 'data'
+                        Email emailToSend = JsonSerializer.deserialize(request.getData(), Email.class);
+
+                        // Salviamo la mail nel file di ogni destinatario
+                        for (String recipient : emailToSend.getRecipients()) {
+                            model.addEmailToInbox(recipient.trim(), emailToSend);
+                        }
+
+                        response.setStatus(ProtocolConstants.STATUS_OK);
+                        response.setData("Email elaborata con successo");
+                        HelloController.getInstance().logMessage("Email inviata da " + emailToSend.getSender() + " a " + emailToSend.getRecipients());
+                        break;
+
+                    default:
+                        // Se arriva un comando che non conosciamo (es. DELETE che faremo più avanti)
+                        response.setStatus(ProtocolConstants.STATUS_BAD_REQUEST);
+                        response.setData("Comando non supportato");
+                        HelloController.getInstance().logMessage("Comando ignorato: " + command);
+                        break;
                 }
+
+                // 3. RISPOSTA: Inviamo il pacchetto di ritorno al Client
+                writer.println(JsonSerializer.serialize(response));
             }
 
         } catch (Exception e) {
-            // aggiunta un logger per loggare l'errore invece di stampare su console e inviare al client un messaggio di errore prima di chiudere la connessione
-            System.err.println("Errore nel ClientHandler: " + e.getMessage());
-            e.printStackTrace();
+            HelloController.getInstance().logMessage("Errore di rete con il Client: " + e.getMessage());
         } finally {
             try {
-                clientSocket.close();
+                clientSocket.close(); // Chiudiamo sempre il socket alla fine (Usa e Getta)
             } catch (Exception e) {
-                System.err.println("Errore chiusura socket client: " + e.getMessage());
+                e.printStackTrace();
             }
-
         }
     }
 }

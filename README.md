@@ -249,3 +249,13 @@ N.B.
 * Implementata la validazione Regex estesa: il campo "To:" (destinatari) supporta l'inserimento di **indirizzi multipli separati da virgola**, validandoli singolarmente prima di permettere l'invio.
 * Gestione visiva della disconnessione (pallino rosso) e della notifica di nuovi messaggi (banner chiudibile).
 >>>>>>> 1f53d2fc89868967985d4e078dfd4f530090c9f6
+
+
+
+DOCUMENTO
+bottoni reply e reply-all/forward
+server che contiene già account preconfigurati (MailboxServer)
+più client contemporanei 
+COMANDI AGGIUNTIVI PER LA CORRETTA COMUNICAZIONE TRA CLIENT-SERVER (tipo per controllo del messaggio che sia arrivato correttamente)
+
+PROBLEMA che potrebbe o meno in base alla richiesta della prof, cioè che il client non fa persistere l'email che gli sono stati inviati in precedenza, perchè solo il server li gestisce come persistenti e che li marchia come già inviati al client (e non per via del server shutdown)

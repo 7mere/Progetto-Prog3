@@ -53,7 +53,7 @@ public class ServerStorage {
         List<String> defaults = List.of(
             "luca.gado@edu.unito.it",
             "mehratab.istifanos@edu.unito.it",
-            "valerio.ghirardotto"
+            "valerio.ghirardotto@edu.unito.it"
         );
 
         for (String email : defaults) {

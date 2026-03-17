@@ -12,7 +12,7 @@ import com.unito.client.service.MailService;
 
 public class InboxController {
 
-    private MailService mailService = new MailService();
+    private final MailService mailService = new MailService();
     private String currentUserEmail; // Da valorizzare nel metodo initUser()
 
     /* =========================================================
@@ -79,7 +79,7 @@ public class InboxController {
     @FXML
     private TableView<EmailClient> messageTable;
 
-    // Colonne della tabella (Assicurati che in SceneBuilder o nell'FXML abbiano questi fx:id!)
+    // Colonne della tabella
     @FXML
     private TableColumn<EmailClient, String> colFrom;
 
@@ -215,7 +215,7 @@ public class InboxController {
                 forwardButton.setDisable(false);
                 deleteButton.setDisable(false);
 
-                // Opzionale: stampa in console per farti vedere che funziona
+                // Opzionale: stampa in console la mail selezionata
                 System.out.println("Selezionata email da: " + newValue.getSender());
             }
         });
@@ -310,9 +310,9 @@ public class InboxController {
 
         // 1. Creiamo la mail con i dati presi dalla grafica
         EmailClient emailDaInviare = new EmailClient();
-        // AGGIUNGI QUESTA RIGA PER GENERARE UN ID UNIVOCO:
+        // Genera un id univoco
         emailDaInviare.setId(java.util.UUID.randomUUID().toString());
-        // AGGIUNGI QUESTA RIGA PER LA DATA:
+        // setta la data odierna per la mail da inviare
         emailDaInviare.setDate(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
         emailDaInviare.setSender(currentUserEmail);
         emailDaInviare.setSubject(subjectField.getText() != null ? subjectField.getText() : "");
@@ -417,9 +417,6 @@ public class InboxController {
         bodyArea.positionCaret(0);
     }
 
-    // ... i tuoi metodi precedenti (es. onSendClick, onReplyClick...)
-
-    // INCOLLA DA QUI:
     public void initUser(String email) {
         this.currentUserEmail = email;
         userEmailLabel.setText(email);

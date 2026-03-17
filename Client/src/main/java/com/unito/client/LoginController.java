@@ -30,7 +30,6 @@ public class LoginController {
                 javafx.scene.Scene inboxScene = new javafx.scene.Scene(loader.load(), 1100, 720);
                 inboxScene.getStylesheets().add(getClass().getResource("inbox.css").toExternalForm());
 
-                // ---- ECCO LE DUE RIGHE FONDAMENTALI CHE MANCAVANO ----
                 InboxController inboxController = loader.getController();
                 inboxController.initUser(insertedMail);
                 // -------------------------------------------------------
@@ -82,8 +81,6 @@ public class LoginController {
             com.unito.client.shared.protocol.Message response = com.unito.client.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.client.shared.protocol.Message.class);
             
             return response.getStatus() == com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK;
-            // throw new RuntimeException("Il server ha rifiutato il login.");
-            // throw new RuntimeException("Nessuna risposta dal server.");
 
         } catch (Exception e) {
             System.err.println("Server non raggiungibile: " + e.getMessage());

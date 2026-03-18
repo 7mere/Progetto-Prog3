@@ -1,14 +1,11 @@
 package com.unito.client;
 
+import java.io.PrintWriter;
+import java.util.regex.Pattern;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.regex.Pattern;
 
 public class LoginController {
     @FXML
@@ -19,13 +16,20 @@ public class LoginController {
     protected void onLoginButtonClick() {
         String insertedMail = mailField.getText();
         if(isValidEmail(insertedMail)) {
+
+            boolean serverAccepted = notifyServerLoginClick(insertedMail);
+
+            if(!serverAccepted) {
+                result.setText("Utente non riconosciuto");
+                return;
+            }
+
             try {
                 // 1. Carica la vista della Inbox
                 javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("inbox-view.fxml"));
                 javafx.scene.Scene inboxScene = new javafx.scene.Scene(loader.load(), 1100, 720);
                 inboxScene.getStylesheets().add(getClass().getResource("inbox.css").toExternalForm());
 
-                // ---- ECCO LE DUE RIGHE FONDAMENTALI CHE MANCAVANO ----
                 InboxController inboxController = loader.getController();
                 inboxController.initUser(insertedMail);
                 // -------------------------------------------------------
@@ -56,10 +60,10 @@ public class LoginController {
         return Pattern.matches(emailRegex, normalized);
     }
 
-    private void notifyServerLoginClick(String email) {
+    private boolean notifyServerLoginClick(String email) {
         try (
                 java.net.Socket socket = new java.net.Socket("127.0.0.1", 8090);
-                java.io.PrintWriter out = new java.io.PrintWriter(socket.getOutputStream(), true);
+                PrintWriter out = new java.io.PrintWriter(socket.getOutputStream(), true);
                 java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))
         ) {
             com.unito.client.shared.protocol.Message request = new com.unito.client.shared.protocol.Message(
@@ -70,16 +74,17 @@ public class LoginController {
             out.println(com.unito.client.shared.utils.JsonSerializer.serialize(request));
 
             String jsonResponse = in.readLine();
-            if (jsonResponse != null) {
-                com.unito.client.shared.protocol.Message response = com.unito.client.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.client.shared.protocol.Message.class);
-                if (response.getStatus() != com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK) {
-                    throw new RuntimeException("Il server ha rifiutato il login.");
-                }
-            } else {
-                throw new RuntimeException("Nessuna risposta dal server.");
+            if (jsonResponse == null) {
+                return false;
             }
+
+            com.unito.client.shared.protocol.Message response = com.unito.client.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.client.shared.protocol.Message.class);
+            
+            return response.getStatus() == com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK;
+
         } catch (Exception e) {
-            System.err.println("Errore comunicazione client-server: " + e.getMessage());
+            System.err.println("Server non raggiungibile: " + e.getMessage());
+            return false;
         }
     }
 }

@@ -1,17 +1,17 @@
 package com.unito.server;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.List;
+
 import com.unito.server.models.ServerStorage;
 import com.unito.server.shared.models.Email;
 import com.unito.server.shared.protocol.CommandOperation;
 import com.unito.server.shared.protocol.Message;
 import com.unito.server.shared.protocol.ProtocolConstants;
 import com.unito.server.shared.utils.JsonSerializer;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.List;
 
 public class ClientHandler implements Runnable {
 
@@ -26,11 +26,13 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
+                BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); // reader per leggere i messaggi dal client
+                PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true) // writer per inviare i messaggi al client
+                                                                                        // true per abilitare l'auto-flush, così ogni volta che scriviamo qualcosa con writer.println() viene inviato immediatamente al client senza dover chiamare writer.flush() manualmente
         ) {
+
             // Leggiamo la stringa inviata dal Client
-            String requestJson = in.readLine();
+            String requestJson = reader.readLine();
 
             if (requestJson != null) {
                 // 1. TRADUZIONE: Trasformiamo il JSON in un oggetto Message
@@ -48,9 +50,17 @@ public class ClientHandler implements Runnable {
                 switch (command) {
                     case LOGIN:
                         String userEmail = request.getData();
-                        response.setStatus(ProtocolConstants.STATUS_OK);
-                        response.setData("Login effettuato con successo");
-                        HelloController.getInstance().logMessage("Utente loggato: " + userEmail);
+
+                        if(model.userExists(userEmail)) {
+                            response.setStatus(ProtocolConstants.STATUS_OK);
+                            response.setData("Login effettuato con successo");
+                            HelloController.getInstance().logMessage("Utente loggato: " + userEmail);
+                        } 
+                        else {
+                            response.setStatus(ProtocolConstants.STATUS_NOT_FOUND);
+                            response.setData("Utente non registrato");
+                            HelloController.getInstance().logMessage("Login fallito: utente inesistente " + userEmail);
+                        }
                         break;
 
                     case FETCH_NEW:
@@ -61,6 +71,8 @@ public class ClientHandler implements Runnable {
 
                         response.setStatus(ProtocolConstants.STATUS_OK);
                         response.setData(JsonSerializer.serialize(inbox));
+
+                        // HelloController.getInstance().logMessage("Inviate " + inbox.size() + " email a " + userToFetch);
                         break;
 
                     case SEND:
@@ -69,7 +81,9 @@ public class ClientHandler implements Runnable {
 
                         // Salviamo la mail nel file di ogni destinatario
                         for (String recipient : emailToSend.getRecipients()) {
-                            model.addEmailToInbox(recipient.trim(), emailToSend);
+                            if(model.userExists(recipient.trim())) {
+                                model.addEmailToInbox(recipient.trim(), emailToSend);
+                            }
                         }
 
                         response.setStatus(ProtocolConstants.STATUS_OK);
@@ -98,7 +112,7 @@ public class ClientHandler implements Runnable {
                 }
 
                 // 3. RISPOSTA: Inviamo il pacchetto di ritorno al Client
-                out.println(JsonSerializer.serialize(response));
+                writer.println(JsonSerializer.serialize(response));
             }
 
         } catch (Exception e) {

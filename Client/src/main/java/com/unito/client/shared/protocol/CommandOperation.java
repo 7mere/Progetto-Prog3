@@ -4,7 +4,7 @@ package com.unito.client.shared.protocol;
  * Elenco di tutti i possibili comandi che possono essere inviati tra Client e Server
  */
 public enum CommandOperation {
-    // Autentificazione per l'utente
+    // Autenticazione per l'utente
     LOGIN("LOGIN"),
     
     //LOGOUT("LOGOUT"),
@@ -40,18 +40,4 @@ public enum CommandOperation {
         return code;
     }
 
-    /**
-     * Ottieni CommandOperation dal codice stringa.
-     */
-    public static CommandOperation fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("Code cannot be null");
-        }
-        for (CommandOperation op : CommandOperation.values()) {
-            if (op.code.equalsIgnoreCase(code)) {
-                return op;
-            }
-        }
-        throw new IllegalArgumentException("Unknown command: " + code);
-    }
 }

@@ -1,11 +1,20 @@
 package com.unito.client;
 
+import java.io.BufferedReader;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.regex.Pattern;
 
+import com.unito.shared.protocol.CommandOperation;
+import com.unito.shared.protocol.Message;
+import com.unito.shared.protocol.ProtocolConstants;
+
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 
 public class LoginController {
     @FXML
@@ -26,8 +35,8 @@ public class LoginController {
 
             try {
                 // 1. Carica la vista della Inbox
-                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("inbox-view.fxml"));
-                javafx.scene.Scene inboxScene = new javafx.scene.Scene(loader.load(), 1100, 720);
+                FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("inbox-view.fxml"));
+                Scene inboxScene = new javafx.scene.Scene(loader.load(), 1100, 720);
                 inboxScene.getStylesheets().add(getClass().getResource("inbox.css").toExternalForm());
 
                 // ---- ECCO LE DUE RIGHE FONDAMENTALI CHE MANCAVANO ----
@@ -36,7 +45,7 @@ public class LoginController {
                 // -------------------------------------------------------
 
                 // 2. Cambia la scena nella finestra attuale
-                javafx.stage.Stage stage = (javafx.stage.Stage) mailField.getScene().getWindow();
+                Stage stage = (javafx.stage.Stage) mailField.getScene().getWindow();
                 stage.setScene(inboxScene);
                 stage.setTitle("Mail Client - " + insertedMail);
                 notifyServerLoginClick(insertedMail);
@@ -63,25 +72,25 @@ public class LoginController {
 
     private boolean notifyServerLoginClick(String email) {
         try (
-                java.net.Socket socket = new java.net.Socket("127.0.0.1", 8090);
+                Socket socket = new java.net.Socket("127.0.0.1", 8090);
                 PrintWriter out = new java.io.PrintWriter(socket.getOutputStream(), true);
-                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))
+                BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))
         ) {
-            com.unito.client.shared.protocol.Message request = new com.unito.client.shared.protocol.Message(
-                    com.unito.client.shared.protocol.CommandOperation.LOGIN.getCode(),
-                    com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK,
-                    email
+            Message request = new com.unito.shared.protocol.Message(
+            CommandOperation.LOGIN.getCode(),
+            ProtocolConstants.STATUS_OK,
+            email
             );
-            out.println(com.unito.client.shared.utils.JsonSerializer.serialize(request));
+            out.println(com.unito.shared.utils.JsonSerializer.serialize(request));
 
             String jsonResponse = in.readLine();
             if (jsonResponse == null) {
                 return false;
             }
 
-            com.unito.client.shared.protocol.Message response = com.unito.client.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.client.shared.protocol.Message.class);
+            Message response = com.unito.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.shared.protocol.Message.class);
             
-            return response.getStatus() == com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK;
+            return response.getStatus() == com.unito.shared.protocol.ProtocolConstants.STATUS_OK;
             // throw new RuntimeException("Il server ha rifiutato il login.");
             // throw new RuntimeException("Nessuna risposta dal server.");
 

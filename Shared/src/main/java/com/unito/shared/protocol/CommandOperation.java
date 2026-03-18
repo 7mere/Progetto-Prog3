@@ -1,4 +1,4 @@
-package com.unito.client.shared.protocol;
+package com.unito.shared.protocol;
 
 /**
  * Elenco di tutti i possibili comandi che possono essere inviati tra Client e Server

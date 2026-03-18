@@ -2,8 +2,8 @@ package com.unito.server.models;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.unito.server.HelloController;
-import com.unito.server.shared.models.Email;
-import com.unito.server.shared.utils.JsonSerializer;
+import com.unito.shared.models.Email;
+import com.unito.shared.utils.JsonSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,7 +53,7 @@ public class ServerStorage {
         List<String> defaults = List.of(
             "luca.gado@edu.unito.it",
             "mehratab.istifanos@edu.unito.it",
-            "valerio.ghirardotto"
+            "valerio.ghirardotto@edu.unito.it"
         );
 
         for (String email : defaults) {

@@ -1,18 +1,18 @@
 package com.unito.client.service;
 
-import com.unito.client.models.EmailClient;
-import com.unito.client.shared.models.Email;
-import com.unito.client.shared.protocol.CommandOperation;
-import com.unito.client.shared.protocol.Message;
-import com.unito.client.shared.protocol.ProtocolConstants;
-import com.unito.client.shared.utils.JsonSerializer;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.unito.client.models.EmailClient;
+import com.unito.shared.models.Email;
+import com.unito.shared.protocol.CommandOperation;
+import com.unito.shared.protocol.Message;
+import com.unito.shared.protocol.ProtocolConstants;
+import com.unito.shared.utils.JsonSerializer;
 
 public class MailService {
 
@@ -87,18 +87,18 @@ public class MailService {
             // Prepariamo i dati: chi è l'utente e quale mail vuole cancellare
             String[] payload = { userEmail, emailId };
 
-            com.unito.client.shared.protocol.Message request = new com.unito.client.shared.protocol.Message(
-                    com.unito.client.shared.protocol.CommandOperation.DELETE.getCode(),
-                    com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK,
-                    com.unito.client.shared.utils.JsonSerializer.serialize(payload)
+            Message request = new Message(
+                    CommandOperation.DELETE.getCode(),
+                    ProtocolConstants.STATUS_OK,
+                    JsonSerializer.serialize(payload)
             );
 
-            out.println(com.unito.client.shared.utils.JsonSerializer.serialize(request));
+            out.println(JsonSerializer.serialize(request));
 
             String jsonResponse = in.readLine();
             if (jsonResponse != null) {
-                com.unito.client.shared.protocol.Message resp = com.unito.client.shared.utils.JsonSerializer.deserialize(jsonResponse, com.unito.client.shared.protocol.Message.class);
-                return resp.getStatus() == com.unito.client.shared.protocol.ProtocolConstants.STATUS_OK;
+                Message resp = JsonSerializer.deserialize(jsonResponse, Message.class);
+                return resp.getStatus() == ProtocolConstants.STATUS_OK;
             }
         }
         return false;

@@ -1,4 +1,4 @@
-package com.unito.server.shared.utils;
+package com.unito.shared.utils;
 
 //import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

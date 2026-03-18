@@ -1,4 +1,4 @@
-package com.unito.client.shared.models;
+package com.unito.shared.models;
 
 import java.util.Date;
 import java.util.List;

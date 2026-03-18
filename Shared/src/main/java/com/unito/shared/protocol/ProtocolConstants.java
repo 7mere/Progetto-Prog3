@@ -1,4 +1,4 @@
-package com.unito.server.shared.protocol;
+package com.unito.shared.protocol;
 
 /**
  * Protocol constants used for communication between Client and Server.

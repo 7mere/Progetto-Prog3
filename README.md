@@ -92,7 +92,7 @@ Il voto finale deve essere registrato entro fine settembre 2025, data oltre la q
 
 ### Struttura del progetto
 
-Si è deciso di creare un solo progetto Gradle multi-module che conterrà due moduli FXML separati (uno per il client e l'altro per il server), in questo modo si creeranno due JVM e quindi due build.gradle ben distinte 
+FALSO: Si è deciso di creare un solo progetto Gradle multi-module che conterrà due moduli FXML separati (uno per il client e l'altro per il server), in questo modo si creeranno due JVM e quindi due build.gradle ben distinte 
 
 Si gestisce una compilazione automatica dei file Java usando Maven 
 
@@ -122,11 +122,11 @@ Le istruzioni scritte in build.gradle dicono a Gradle cosa mettere in questa car
 - pom.xml: Si ha che Maven richiede Java 21 dalla parte del Server
 
 ### Persistenza dei file nel server
-Come fare? Meglio txt o binari? Oppure JSON
+In JSON
 
 ### Protocollo di comunicazione tra client e server
 
-#### Protocollo di comunicazione client->server
+#### Comunicazione da Client a Server
 
 Il client invia vari comandi al server dove ognuno di questi definisce un tipo di operazione richiesta di controllo:
 - SEND: invio di messaggio, il client manda il comando SEND seguito 
@@ -139,10 +139,6 @@ Il client invia vari comandi al server dove ognuno di questi definisce un tipo d
 
 - FETCH_NEW <email> <lastKnownMessageId> — chiede solo messaggi non ancora inviati al client.
 
-    - risposta: MSG_LIST <n> seguito da n messaggi, ognuno con LENGTH:<bytes> + JSON
-
-    - oppure MSG_LIST 0
-
 - SEND — invio di messaggio: il client manda SEND poi LENGTH:<bytes> e poi JSON dell'Email. Server risponde per ogni destinatario DELIVERED <recipient> o FAILED <recipient> reason
 
 - DELETE <email> <messageId> — cancella messaggio dalla inbox server-side (o marca come cancellato)
@@ -151,12 +147,9 @@ Il client invia vari comandi al server dove ognuno di questi definisce un tipo d
 
 - QUIT — chiude connessione
 
-
-Meglio usare una classe di richiesta e risposta che verrà messo in una libreria comune sia per il client che per il server? 
-Si usa una libreria comune tra client e server in modo che contenga tutto ciò che c'è di uguale tra i due e garantisce la stessa versione del protocollo, come i tipi di messaggio, comandi, classi che sono serializzate in JSON, costanti di protocollo??, degli helper per (de)serializzare il JSON 
-
-Libreria è una cartella chiamata shared che rappresenta il contratto tra client e server 
-Contiene:
+#### Uso del modulo Maven chiamato Shared (produce un jar)
+Viene creato un modulo a parte che sarà una libreria che conterrà i file in comune sia nel JVM Client che nel JVM Server (contratto tra le due classi); viene prodotto un jar in modo da creare la libreria condivisa
+Tale modulo conterrà file per:
 - il `models/` classi di dominio che vengono serializzate in JSON per la comunicazione client-server. In questo caso `Email.java`
 - il `protocol/` definisce struttura e regole di comunicazione tra client e server. Come `CommandOperation.java` `ProtocolConstants.java` `Message.java`
 - l'`utils/` helper per operazioni comuni tra client e server. Cioè il `JsonSerializer.java`
@@ -253,9 +246,6 @@ N.B.
 
 
 DOCUMENTO
-bottoni reply e reply-all/forward
-server che contiene già account preconfigurati (MailboxServer)
-più client contemporanei 
 COMANDI AGGIUNTIVI PER LA CORRETTA COMUNICAZIONE TRA CLIENT-SERVER (tipo per controllo del messaggio che sia arrivato correttamente)
 
 PROBLEMA che potrebbe o meno in base alla richiesta della prof, cioè che il client non fa persistere l'email che gli sono stati inviati in precedenza, perchè solo il server li gestisce come persistenti e che li marchia come già inviati al client (e non per via del server shutdown)

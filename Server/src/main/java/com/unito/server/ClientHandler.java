@@ -7,11 +7,11 @@ import java.net.Socket;
 import java.util.List;
 
 import com.unito.server.models.ServerStorage;
-import com.unito.server.shared.models.Email;
-import com.unito.server.shared.protocol.CommandOperation;
-import com.unito.server.shared.protocol.Message;
-import com.unito.server.shared.protocol.ProtocolConstants;
-import com.unito.server.shared.utils.JsonSerializer;
+import com.unito.shared.models.Email;
+import com.unito.shared.protocol.CommandOperation;
+import com.unito.shared.protocol.Message;
+import com.unito.shared.protocol.ProtocolConstants;
+import com.unito.shared.utils.JsonSerializer;
 
 public class ClientHandler implements Runnable {
 

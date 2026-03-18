@@ -1,18 +1,28 @@
 package com.unito.client;
 
-import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.shape.Circle;
+import java.util.List;
+
+import com.unito.client.models.EmailClient;
+import com.unito.client.service.MailService;
+import com.unito.shared.utils.JsonSerializer;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import com.unito.client.models.EmailClient;
-import java.util.List;
-import com.unito.client.service.MailService;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.shape.Circle;
 
 public class InboxController {
 
-    private MailService mailService = new MailService();
+    private final MailService mailService = new MailService();
     private String currentUserEmail; // Da valorizzare nel metodo initUser()
 
     /* =========================================================
@@ -79,7 +89,7 @@ public class InboxController {
     @FXML
     private TableView<EmailClient> messageTable;
 
-    // Colonne della tabella (Assicurati che in SceneBuilder o nell'FXML abbiano questi fx:id!)
+    // Colonne della tabella
     @FXML
     private TableColumn<EmailClient, String> colFrom;
 
@@ -215,7 +225,7 @@ public class InboxController {
                 forwardButton.setDisable(false);
                 deleteButton.setDisable(false);
 
-                // Opzionale: stampa in console per farti vedere che funziona
+                // Opzionale: stampa in console la mail selezionata
                 System.out.println("Selezionata email da: " + newValue.getSender());
             }
         });
@@ -281,6 +291,7 @@ public class InboxController {
         deleteTask.setOnSucceeded(e -> {
             if (deleteTask.getValue()) {
                 emailList.remove(selected); // Rimuoviamo la mail dalla tabella visiva
+                saveLocalInbox();
                 messageTable.getSelectionModel().clearSelection();
                 statusBarLabel.setText("Email eliminata correttamente.");
             }
@@ -310,9 +321,9 @@ public class InboxController {
 
         // 1. Creiamo la mail con i dati presi dalla grafica
         EmailClient emailDaInviare = new EmailClient();
-        // AGGIUNGI QUESTA RIGA PER GENERARE UN ID UNIVOCO:
+        // Genera un id univoco
         emailDaInviare.setId(java.util.UUID.randomUUID().toString());
-        // AGGIUNGI QUESTA RIGA PER LA DATA:
+        // setta la data odierna per la mail da inviare
         emailDaInviare.setDate(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
         emailDaInviare.setSender(currentUserEmail);
         emailDaInviare.setSubject(subjectField.getText() != null ? subjectField.getText() : "");
@@ -417,13 +428,11 @@ public class InboxController {
         bodyArea.positionCaret(0);
     }
 
-    // ... i tuoi metodi precedenti (es. onSendClick, onReplyClick...)
-
-    // INCOLLA DA QUI:
     public void initUser(String email) {
         this.currentUserEmail = email;
         userEmailLabel.setText(email);
 
+        loadLocalInbox();
         // Avvio il Thread che controlla le mail ogni 5 secondi
         startPollingThread();
     }
@@ -466,6 +475,7 @@ public class InboxController {
 
                         // Aggiorniamo la notifica e l'orario SOLO se abbiamo effettivamente scaricato qualcosa di nuovo
                         if (aggiunteNuove) {
+                            saveLocalInbox();
                             lastUpdateLabel.setText(java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
                             notificationBar.setVisible(true);
                             notificationBar.setManaged(true);
@@ -507,5 +517,37 @@ public class InboxController {
     private void onDismissNotificationClick() {
         notificationBar.setVisible(false);
         notificationBar.setManaged(false);
+    }
+
+    /**
+     * Salva la lista delle email corrente in un file JSON locale al client.
+     */
+    private void saveLocalInbox() {
+        try {
+            java.io.File dir = new java.io.File("client_data");
+            if (!dir.exists()) dir.mkdir();
+
+            java.io.File file = new java.io.File(dir, currentUserEmail + "_inbox.json");
+            String json = JsonSerializer.serialize(new java.util.ArrayList<>(emailList));
+            java.nio.file.Files.writeString(file.toPath(), json);
+        } catch (Exception e) {
+            System.err.println("Errore nel salvataggio locale: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Carica le email salvate precedentemente sul disco locale.
+     */
+    private void loadLocalInbox() {
+        try {
+            java.io.File file = new java.io.File("client_data/" + currentUserEmail + "_inbox.json");
+            if (file.exists()) {
+                String json = java.nio.file.Files.readString(file.toPath());
+                EmailClient[] salvate = JsonSerializer.deserialize(json, EmailClient[].class);
+                emailList.setAll(salvate);
+            }
+        } catch (Exception e) {
+            System.err.println("Errore nel caricamento locale: " + e.getMessage());
+        }
     }
 }

@@ -4,7 +4,7 @@ package com.unito.shared.protocol;
  * Elenco di tutti i possibili comandi che possono essere inviati tra Client e Server
  */
 public enum CommandOperation {
-    // Autentificazione per l'utente
+    // Autenticazione per l'utente
     LOGIN("LOGIN"),
     
     //LOGOUT("LOGOUT"),

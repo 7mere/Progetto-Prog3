@@ -281,6 +281,7 @@ public class InboxController {
         deleteTask.setOnSucceeded(e -> {
             if (deleteTask.getValue()) {
                 emailList.remove(selected); // Rimuoviamo la mail dalla tabella visiva
+                saveLocalInbox();
                 messageTable.getSelectionModel().clearSelection();
                 statusBarLabel.setText("Email eliminata correttamente.");
             }
@@ -424,6 +425,7 @@ public class InboxController {
         this.currentUserEmail = email;
         userEmailLabel.setText(email);
 
+        loadLocalInbox();
         // Avvio il Thread che controlla le mail ogni 5 secondi
         startPollingThread();
     }
@@ -466,6 +468,7 @@ public class InboxController {
 
                         // Aggiorniamo la notifica e l'orario SOLO se abbiamo effettivamente scaricato qualcosa di nuovo
                         if (aggiunteNuove) {
+                            saveLocalInbox();
                             lastUpdateLabel.setText(java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
                             notificationBar.setVisible(true);
                             notificationBar.setManaged(true);
@@ -507,5 +510,37 @@ public class InboxController {
     private void onDismissNotificationClick() {
         notificationBar.setVisible(false);
         notificationBar.setManaged(false);
+    }
+
+    /**
+     * Salva la lista delle email corrente in un file JSON locale al client.
+     */
+    private void saveLocalInbox() {
+        try {
+            java.io.File dir = new java.io.File("client_data");
+            if (!dir.exists()) dir.mkdir();
+
+            java.io.File file = new java.io.File(dir, currentUserEmail + "_inbox.json");
+            String json = com.unito.client.shared.utils.JsonSerializer.serialize(new java.util.ArrayList<>(emailList));
+            java.nio.file.Files.writeString(file.toPath(), json);
+        } catch (Exception e) {
+            System.err.println("Errore nel salvataggio locale: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Carica le email salvate precedentemente sul disco locale.
+     */
+    private void loadLocalInbox() {
+        try {
+            java.io.File file = new java.io.File("client_data/" + currentUserEmail + "_inbox.json");
+            if (file.exists()) {
+                String json = java.nio.file.Files.readString(file.toPath());
+                EmailClient[] salvate = com.unito.client.shared.utils.JsonSerializer.deserialize(json, EmailClient[].class);
+                emailList.setAll(salvate);
+            }
+        } catch (Exception e) {
+            System.err.println("Errore nel caricamento locale: " + e.getMessage());
+        }
     }
 }

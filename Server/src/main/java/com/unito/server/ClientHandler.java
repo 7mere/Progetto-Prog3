@@ -33,6 +33,8 @@ public class ClientHandler implements Runnable {
 
             // Leggiamo la stringa inviata dal Client
             String requestJson = reader.readLine();
+            System.out.println("JSON ricevuto dal lato server: " + requestJson);
+
 
             if (requestJson != null) {
                 // 1. TRADUZIONE: Trasformiamo il JSON in un oggetto Message
@@ -78,6 +80,7 @@ public class ClientHandler implements Runnable {
                     case SEND:
                         // Estraiamo l'oggetto Email dal campo 'data'
                         Email emailToSend = JsonSerializer.deserialize(request.getData(), Email.class);
+                        System.out.println("Server: " + request);
 
                         // Salviamo la mail nel file di ogni destinatario
                         for (String recipient : emailToSend.getRecipients()) {

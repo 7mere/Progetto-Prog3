@@ -1,6 +1,6 @@
 package com.unito.server.models;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference; // per evitare problemi con il Type Ersasure, in cui se si deserializza JSON in un elemento della List<Email> Jackson nln saprà di cosa è fatto la lista
 import com.unito.server.HelloController;
 import com.unito.shared.models.Email;
 import com.unito.shared.utils.JsonSerializer;
@@ -46,30 +46,37 @@ public class ServerStorage {
     }
 
     private void ensureDefaultUsers() {
-        Map<String, User> users = loadUsers();
-        boolean changed = false;
 
         // Definisci qui gli account preconfigurati
-        List<String> defaults = List.of(
-            "luca.gado@edu.unito.it",
-            "mehratab.istifanos@edu.unito.it",
-            "valerio.ghirardotto@edu.unito.it"
+        Map<String, User> defaults = Map.of(
+            "luca.gado@edu.unito.it", new User("luca.gado@edu.unito.it", "Luca", "Gado"),
+            "mehratab.istifanos@edu.unito.it", new User("mehratab.istifanos@edu.unito.it", "Mehratab", "Istifanos"),
+            "valerio.ghirardotto@edu.unito.it", new User("valerio.ghirardotto@edu.unito.it", "Valerio", "Ghirardotto")
         );
 
-        for (String email : defaults) {
-            if (!users.containsKey(email)) {
-                users.put(email, new User(email));
-                changed = true;
+        usersLock.writeLock().lock();
+        try {
+            Map<String, User> users = loadUsers();
+            boolean changed = false;
+        
+            for (var entry : defaults.entrySet()) {
+                if (!users.containsKey(entry.getKey())) {
+                    users.put(entry.getKey(), entry.getValue());
+                    changed = true;
+                }
             }
-        }
 
-        if (changed) {
-            saveUsers(users);
-            HelloController.getInstance().logMessage("Account preconfigurati creati/aggiornati");
+            if (changed) {
+                saveUsers(users);
+                HelloController.getInstance().logMessage("Account preconfigurati creati/aggiornati");
+            }
+
+        } finally {
+            usersLock.writeLock().unlock();
         }
 
         // Assicuriamo che le caselle dei preconfigurati esistano (file JSON vuoti)
-        for (String email : defaults) {
+        for (String email : defaults.keySet()) {
             ensureInboxExists(email);
         }
     }
@@ -120,7 +127,8 @@ public class ServerStorage {
     public boolean validateUser(String email, String password) {
         usersLock.readLock().lock();
         try {
-            return loadUsers().containsKey(email);
+            Map<String, User> users = loadUsers();
+            return users.containsKey(email);
         } finally {
             usersLock.readLock().unlock();
         }
@@ -135,12 +143,12 @@ public class ServerStorage {
         }
     }
 
-    public boolean createUser(String email) {
+    public boolean createUser(String email, String name, String surname) {
         usersLock.writeLock().lock();
         try {
             Map<String, User> users = loadUsers();
             if (users.containsKey(email)) return false;
-            users.put(email, new User(email));
+            users.put(email, new User(email, name, surname));
             saveUsers(users);
             ensureInboxExists(email);
             return true;
@@ -233,14 +241,22 @@ public class ServerStorage {
 
     private static class User {
         private String email;
+        private String name;
+        private String surname;
 
         public User() { }
 
-        public User(String email) {
+        public User(String email, String name, String surname) {
             this.email = email;
+            this.name = name;
+            this.surname = surname;
         }
 
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
+        public String getName() { return name; }
+        public void setName(String nome) { this.name = name; }
+        public String getSurname() { return surname; }
+        public void setSurname(String surname) { this.surname = surname; }
     }
 }

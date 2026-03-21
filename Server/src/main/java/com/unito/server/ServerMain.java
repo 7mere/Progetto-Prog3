@@ -25,8 +25,6 @@ public class ServerMain extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("hello-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
 
-        // possibilà di aggiungere un css per lo stile della GUI oppure aggiungerlo in un altro modo? (DA VEDERE)
-
         // aggiungere un controller
 
         stage.setTitle("SERVER EMAIL");

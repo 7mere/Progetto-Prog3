@@ -20,7 +20,7 @@ public class MailService {
     private static final int SERVER_PORT = 8090;
 
     /**
-     * Chiede al server le nuove email.
+     * Interroga il server per recuperare i messaggi non ancora distribuiti.
      */
     public List<EmailClient> fetchNewEmails(String userEmail) throws Exception {
         List<EmailClient> newEmails = new ArrayList<>();
@@ -29,21 +29,17 @@ public class MailService {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // 1. Creiamo il pacchetto di richiesta usando le classi condivise
             Message request = new Message(CommandOperation.FETCH_NEW.getCode(), ProtocolConstants.STATUS_OK, userEmail);
-            out.println(JsonSerializer.serialize(request)); // Inviamo il JSON al server
+            out.println(JsonSerializer.serialize(request));
 
-            // 2. Leggiamo la risposta
             String jsonResponse = in.readLine();
             if (jsonResponse != null) {
-                // Trasformiamo il JSON ricevuto in un oggetto Message
                 Message response = JsonSerializer.deserialize(jsonResponse, Message.class);
 
                 if (response.getStatus() == ProtocolConstants.STATUS_OK && response.getData() != null) {
-                    // Estraiamo l'array di Email "semplici" dal campo data
                     Email[] serverEmails = JsonSerializer.deserialize(response.getData(), Email[].class);
 
-                    // Le traduciamo in EmailClient per la nostra interfaccia grafica!
+                    // Mapping dei DTO ricevuti nel modello supportato dalla View
                     for (Email pojo : serverEmails) {
                         newEmails.add(mapToClient(pojo));
                     }
@@ -54,22 +50,19 @@ public class MailService {
     }
 
     /**
-     * Invia una mail al server.
+     * Inoltra un nuovo messaggio al server per lo smistamento.
      */
     public boolean sendEmail(EmailClient emailClient) throws Exception {
         try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // 1. Traduciamo la nostra EmailClient in una Email "semplice" per il server
             Email pojo = mapToPOJO(emailClient);
-
-            // 2. Impacchettiamo e inviamo
             String emailJson = JsonSerializer.serialize(pojo);
+
             Message request = new Message(CommandOperation.SEND.getCode(), ProtocolConstants.STATUS_OK, emailJson);
             out.println(JsonSerializer.serialize(request));
 
-            // 3. Leggiamo se è andata a buon fine
             String jsonResponse = in.readLine();
             if (jsonResponse != null) {
                 Message response = JsonSerializer.deserialize(jsonResponse, Message.class);
@@ -79,19 +72,17 @@ public class MailService {
         return false;
     }
 
+    /**
+     * Richiede al server l'eliminazione definitiva di un messaggio specifico.
+     */
     public boolean deleteEmail(String userEmail, String emailId) throws Exception {
-        try (java.net.Socket socket = new java.net.Socket(SERVER_IP, SERVER_PORT);
-             java.io.PrintWriter out = new java.io.PrintWriter(socket.getOutputStream(), true);
-             java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))) {
+        try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // Prepariamo i dati: chi è l'utente e quale mail vuole cancellare
+            // Creazione del payload composito per l'operazione di delete
             String[] payload = { userEmail, emailId };
-
-            Message request = new Message(
-                    CommandOperation.DELETE.getCode(),
-                    ProtocolConstants.STATUS_OK,
-                    JsonSerializer.serialize(payload)
-            );
+            Message request = new Message(CommandOperation.DELETE.getCode(), ProtocolConstants.STATUS_OK, JsonSerializer.serialize(payload));
 
             out.println(JsonSerializer.serialize(request));
 
@@ -104,9 +95,8 @@ public class MailService {
         return false;
     }
 
-    // --- METODI "TRADUTTORI" (MAPPER) ---
+    // --- UTILITY METODI DI MAPPING ---
 
-    // Da Email del Server a EmailClient (per la GUI)
     private EmailClient mapToClient(Email pojo) {
         EmailClient client = new EmailClient();
         client.setId(pojo.getId());
@@ -118,7 +108,6 @@ public class MailService {
         return client;
     }
 
-    // Da EmailClient a Email del Server (per inviarla via rete)
     private Email mapToPOJO(EmailClient client) {
         Email pojo = new Email();
         pojo.setId(client.getId());
@@ -126,16 +115,16 @@ public class MailService {
         pojo.setSubject(client.getSubject());
         pojo.setBody(client.getBody());
         pojo.setRecipients(client.getRecipients());
-        // Convertiamo la Stringa della grafica nella Data del Server (java.util.Date)
+
         if (client.getDate() != null && !client.getDate().isEmpty()) {
             try {
                 java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
                 pojo.setDate(formatter.parse(client.getDate()));
             } catch (Exception e) {
-                pojo.setDate(new java.util.Date()); // Se c'è errore, mette la data di adesso
+                pojo.setDate(new java.util.Date());
             }
         } else {
-            pojo.setDate(new java.util.Date()); // Se è vuota, mette la data di adesso
+            pojo.setDate(new java.util.Date());
         }
         return pojo;
     }

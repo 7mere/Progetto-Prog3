@@ -23,7 +23,7 @@ import javafx.scene.shape.Circle;
 public class InboxController {
 
     private final MailService mailService = new MailService();
-    private String currentUserEmail; // Da valorizzare nel metodo initUser()
+    private String currentUserEmail;
 
     /* =========================================================
      * SEZIONE UTENTE / STATO CONNESSIONE
@@ -195,38 +195,26 @@ public class InboxController {
 
     @FXML
     public void initialize() {
-        // 1. Colleghiamo le colonne della grafica alle Property della classe EmailClient
+        // Binding delle colonne della TableView con le Properties del modello EmailClient
         colFrom.setCellValueFactory(cellData -> cellData.getValue().senderProperty());
         colSubject.setCellValueFactory(cellData -> cellData.getValue().subjectProperty());
         colDate.setCellValueFactory(cellData -> cellData.getValue().dateProperty());
 
-        // 2. Colleghiamo la lista osservabile alla tabella
         messageTable.setItems(emailList);
 
-        // 3. Creiamo dei DATI FINTI per testare la grafica
-        EmailClient mail1 = new EmailClient("1", "professore@unito.it", "Voti Progetto", "Bravi, avete preso 30!", "12/05/2026");
-        EmailClient mail2 = new EmailClient("2", "segreteria@unito.it", "Tasse", "Ricordati di pagare la rata.", "10/05/2026");
-        EmailClient mail3 = new EmailClient("3", "mario.rossi@edu.unito.it", "Appunti Prog 3", "Ciao, mi passi gli appunti sui Socket?", "09/05/2026");
-
-        emailList.addAll(mail1, mail2, mail3);
-
-        // 4. (EXTRA) Quando clicchi su una mail, aggiorna i dettagli a destra!
+        // Listener per l'aggiornamento dinamico del pannello di lettura
         messageTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                // Aggiorna le label che hai già preparato nel controller
                 detailFromLabel.setText(newValue.getSender());
                 detailSubjectLabel.setText(newValue.getSubject());
                 detailDateLabel.setText(newValue.getDate());
                 detailBodyArea.setText(newValue.getBody());
 
-                // SBLOCCA I BOTTONI!
+                // Abilitazione dei comandi contestuali
                 replyButton.setDisable(false);
                 replyAllButton.setDisable(false);
                 forwardButton.setDisable(false);
                 deleteButton.setDisable(false);
-
-                // Opzionale: stampa in console la mail selezionata
-                System.out.println("Selezionata email da: " + newValue.getSender());
             }
         });
     }
@@ -341,20 +329,19 @@ public class InboxController {
         }
         emailDaInviare.setRecipients(destinatari);
 
-        // 2. Task in background per la vera chiamata di rete
+        // Task asincrono per delegare l'operazione di rete fuori dal JavaFX Application Thread
         javafx.concurrent.Task<Void> sendTask = new javafx.concurrent.Task<>() {
             @Override
             protected Void call() throws Exception {
-                // CHIAMATA VERA AL SERVER! (Addio Thread.sleep!)
                 boolean success = mailService.sendEmail(emailDaInviare);
                 if (!success) {
-                    throw new Exception("Errore restituito dal server.");
+                    throw new Exception("Operazione rifiutata dal server.");
                 }
                 return null;
             }
         };
 
-        // 3. Cosa fare se il server accetta la mail
+        // Gestione dei callback di successo o fallimento
         sendTask.setOnSucceeded(e -> {
             sendButton.setDisable(false);
             busyIndicator.setVisible(false);
@@ -442,38 +429,34 @@ public class InboxController {
             while (true) {
                 try {
                     Thread.sleep(5000);
-                    // Chiede le mail al server
                     List<EmailClient> nuoveMail = mailService.fetchNewEmails(currentUserEmail);
 
-                    // AGGIUNTA: Se arriviamo qui senza errori, siamo connessi! Coloriamo di VERDE.
+                    // Platform.runLater sincronizza gli aggiornamenti grafici sul thread principale
                     javafx.application.Platform.runLater(() -> {
                         connectionDot.setFill(javafx.scene.paint.Color.GREEN);
                         connectionStatusLabel.setText("CONNESSO");
                         errorLabel.setVisible(false);
                         errorLabel.setManaged(false);
 
-                        // RISOLUZIONE BUG DUPLICATI:
                         boolean aggiunteNuove = false;
 
+                        // Verifica ed evita l'inserimento di messaggi duplicati in memoria
                         for (EmailClient serverMail : nuoveMail) {
-                            // Controlliamo se questa mail è già nella nostra lista a schermo
                             boolean giaPresente = false;
                             for (EmailClient localMail : emailList) {
-                                // Confrontiamo gli ID univoci delle mail
                                 if (localMail.getId() != null && localMail.getId().equals(serverMail.getId())) {
                                     giaPresente = true;
                                     break;
                                 }
                             }
 
-                            // Se l'ID non c'era, è una mail davvero nuova!
                             if (!giaPresente) {
-                                emailList.add(0, serverMail); // add(0) la inserisce in cima alla tabella!
+                                emailList.add(0, serverMail);
                                 aggiunteNuove = true;
                             }
                         }
 
-                        // Aggiorniamo la notifica e l'orario SOLO se abbiamo effettivamente scaricato qualcosa di nuovo
+                        // Aggiornamento dello stato dell'UI in caso di nuovi payload
                         if (aggiunteNuove) {
                             saveLocalInbox();
                             lastUpdateLabel.setText(java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
@@ -484,7 +467,7 @@ public class InboxController {
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
-                    // Se la rete cade, torna ROSSO
+                    // Gestione visiva della caduta di connessione
                     javafx.application.Platform.runLater(() -> {
                         connectionDot.setFill(javafx.scene.paint.Color.RED);
                         connectionStatusLabel.setText("DISCONNESSO");

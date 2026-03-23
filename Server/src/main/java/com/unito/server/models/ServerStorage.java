@@ -124,36 +124,12 @@ public class ServerStorage {
         }
     }
 
-    public boolean validateUser(String email, String password) {
-        usersLock.readLock().lock();
-        try {
-            Map<String, User> users = loadUsers();
-            return users.containsKey(email);
-        } finally {
-            usersLock.readLock().unlock();
-        }
-    }
-
     public boolean userExists(String email) {
         usersLock.readLock().lock();
         try {
             return loadUsers().containsKey(email);
         } finally {
             usersLock.readLock().unlock();
-        }
-    }
-
-    public boolean createUser(String email, String name, String surname) {
-        usersLock.writeLock().lock();
-        try {
-            Map<String, User> users = loadUsers();
-            if (users.containsKey(email)) return false;
-            users.put(email, new User(email, name, surname));
-            saveUsers(users);
-            ensureInboxExists(email);
-            return true;
-        } finally {
-            usersLock.writeLock().unlock();
         }
     }
 

@@ -81,10 +81,6 @@ public class InboxController {
     @FXML
     private Label lastUpdateLabel;
 
-    // Campo di ricerca (mittente / oggetto)
-    @FXML
-    private TextField searchField;
-
     // Tabella della inbox tipizzata con EmailClient
     @FXML
     private TableView<EmailClient> messageTable;

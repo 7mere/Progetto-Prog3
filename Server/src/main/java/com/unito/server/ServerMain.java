@@ -1,18 +1,16 @@
 package com.unito.server;
 
-import com.unito.server.ServerSocketManager;
-import com.unito.server.models.ServerStorage;
-
-import java.util.Properties;
+import java.io.IOException;
 import java.util.Objects;
+import java.util.Properties;
+
+import com.unito.server.models.ServerStorage;
 
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class ServerMain extends Application {
 
@@ -38,7 +36,7 @@ public class ServerMain extends Application {
         });
 
         stage.setOnCloseRequest(event -> {
-            javafx.application.Platform.exit();
+            Platform.exit();
             System.exit(0); // Forza lo spegnimento di tutti i thread di rete
         });
 

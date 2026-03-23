@@ -4,13 +4,15 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.unito.client.models.EmailClient;
 import com.unito.shared.models.Email;
+import com.unito.shared.models.Message;
 import com.unito.shared.protocol.CommandOperation;
-import com.unito.shared.protocol.Message;
 import com.unito.shared.protocol.ProtocolConstants;
 import com.unito.shared.utils.JsonSerializer;
 
@@ -32,6 +34,8 @@ public class MailService {
             Message request = new Message(CommandOperation.FETCH_NEW.getCode(), ProtocolConstants.STATUS_OK, userEmail);
             out.println(JsonSerializer.serialize(request));
 
+            System.out.println("JSON mandato dal lato client: " + request);
+            
             String jsonResponse = in.readLine();
             if (jsonResponse != null) {
                 Message response = JsonSerializer.deserialize(jsonResponse, Message.class);
@@ -66,7 +70,7 @@ public class MailService {
             String jsonResponse = in.readLine();
             if (jsonResponse != null) {
                 Message response = JsonSerializer.deserialize(jsonResponse, Message.class);
-                return response.getStatus() == ProtocolConstants.STATUS_OK;
+                return response.getStatus() == ProtocolConstants.STATUS_CREATED;
             }
         }
         return false;
@@ -118,13 +122,13 @@ public class MailService {
 
         if (client.getDate() != null && !client.getDate().isEmpty()) {
             try {
-                java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+                SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
                 pojo.setDate(formatter.parse(client.getDate()));
             } catch (Exception e) {
-                pojo.setDate(new java.util.Date());
+                pojo.setDate(new Date()); // Se c'è errore, mette la data di adesso
             }
         } else {
-            pojo.setDate(new java.util.Date());
+            pojo.setDate(new Date()); // Se è vuota, mette la data di adesso
         }
         return pojo;
     }

@@ -6,8 +6,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.regex.Pattern;
 
+import com.unito.shared.models.Message;
 import com.unito.shared.protocol.CommandOperation;
-import com.unito.shared.protocol.Message;
 import com.unito.shared.protocol.ProtocolConstants;
 import com.unito.shared.utils.JsonSerializer;
 
@@ -52,7 +52,6 @@ public class LoginController {
                 Stage stage = (Stage) mailField.getScene().getWindow();
                 stage.setScene(inboxScene);
                 stage.setTitle("Mail Client - " + insertedMail);
-
             } catch (Exception e) {
                 System.err.println("Errore fatale nel caricamento della UI: " + e.getMessage());
                 result.setText("Errore di inizializzazione dell'interfaccia.");

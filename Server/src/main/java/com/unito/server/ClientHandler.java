@@ -8,8 +8,8 @@ import java.util.List;
 
 import com.unito.server.models.ServerStorage;
 import com.unito.shared.models.Email;
+import com.unito.shared.models.Message;
 import com.unito.shared.protocol.CommandOperation;
-import com.unito.shared.protocol.Message;
 import com.unito.shared.protocol.ProtocolConstants;
 import com.unito.shared.utils.JsonSerializer;
 
@@ -89,7 +89,7 @@ public class ClientHandler implements Runnable {
                             }
                         }
 
-                        response.setStatus(ProtocolConstants.STATUS_OK);
+                        response.setStatus(ProtocolConstants.STATUS_CREATED);
                         response.setData("Email elaborata con successo");
                         HelloController.getInstance().logMessage("Email inviata da " + emailToSend.getSender() + " a " + emailToSend.getRecipients());
                         break;
@@ -102,7 +102,7 @@ public class ClientHandler implements Runnable {
 
                         boolean ok = model.deleteEmail(user, id);
 
-                        response.setStatus(ok ? ProtocolConstants.STATUS_OK : ProtocolConstants.STATUS_BAD_REQUEST);
+                        response.setStatus(ok ? ProtocolConstants.STATUS_OK : ProtocolConstants.STATUS_NOT_FOUND);
                         response.setData(ok ? "Eliminata" : "Errore: mail non trovata");
                         break;
 

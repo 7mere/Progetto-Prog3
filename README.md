@@ -117,41 +117,57 @@ Le istruzioni scritte in build.gradle dicono a Gradle cosa mettere in questa car
 
 ### N.B. con Maven
 
-- si usa il comando ./mvnw javafx:run per far eseguire il progetto da terminale
+- si usa il comando `./mvnw javafx:run` per far eseguire il progetto da terminale
 
 - pom.xml: Si ha che Maven richiede Java 21 dalla parte del Server
 
-### Persistenza dei file nel server
-In JSON
+- si ha il modulo Shared (creato in jar) quindi bisogna prima installarlo e poi compilarlo, quindi nello Shared bisogna: 
+    - prima installarlo: `./mvnw install`
+    - successivamente compilarlo: `./mvnw compile`
+    - in caso di modifiche, bisogna re-installarlo e re-compilare, ricordandoti prima di fare `clean`
 
-### Protocollo di comunicazione tra client e server
+### Comunicazione tra Client e Server
 
-#### Comunicazione da Client a Server
+Il client e server comunicano attraverso dei socket (non-persistenti), tramite un protocollo testuale, in cui il client invia vari comandi al server dove ognuno di questi definisce un tipo di operazione (richieste) e ottenendo dal server la risposta di tale operazione (tramite costanti di protocollo).
 
-Il client invia vari comandi al server dove ognuno di questi definisce un tipo di operazione richiesta di controllo:
-- SEND: invio di messaggio, il client manda il comando SEND seguito 
+La comunicazione avviene tramite serializzazione e deserializzazione di oggetti per la comunicazione, in particolare della classe Message che contiente vari campi: command, status, data e timestamp; in cui nel campo data contiene una stringa (che sarà il contenuto dell'Email) che verrà anch'esso serializzato/deserializzato come oggetto della classe Email.
 
-- CHECK <email> — verifica esistenza account.
+Mentre per i command si hanno:
+- LOGIN: usato all'avvio per autenticare/identificare (server risponde STATUS_OK/ERR)
+- FETCH_NEW: permette di definire una connessione non persistente col server e di controllare che sia attivo, in questo modo si richiede i messaggi che non gli sono ancora arrivati (sia se il server è online che non)
+- SEND: invio di messaggio ai destinatari (sia al receiver principale e dal CC), se il server non è attivo allora manda un warning alla GUI del client avvisandolo
+- DELETE: permette di eliminare l'email salvata nello storage del client e server
 
-- risposta: OK o ERR:account-not-found
+Uso del file server.properties per contenere la porta per la comunicazione server.
+Per un progetto reale sarebbe meglio fare una configurazione della porta del server all'esterno per garantire flessibilità e separazione tra codice e configurazione; altrimenti se la si scrive nel codice bisognerebbe ricompilare e ridistribuire rischiando cosi errori inutili; altrimenti si scrive direttamente sul codice
+Uso della seguente fonte:
+ - https://stackoverflow.com/questions/24093257/thread-currentthread-getcontextclassloader-getresourceasstream-reads-a-prope
 
-- AUTH <email> — usato all'avvio per autenticare/identificare (server risponde OK/ERR)
+#### Usp della libreria Jackson
 
-- FETCH_NEW <email> <lastKnownMessageId> — chiede solo messaggi non ancora inviati al client.
+Uso di una libreria di mapping JSON per serializzare o deserializzare l'oggetto Message e Email, in questo caso Jackson, che permetterà di trasformare l'oggetto in JSON o viceversa
 
-- SEND — invio di messaggio: il client manda SEND poi LENGTH:<bytes> e poi JSON dell'Email. Server risponde per ogni destinatario DELIVERED <recipient> o FAILED <recipient> reason
+Aggiungendo una dipendenza all'interno di Maven:
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
 
-- DELETE <email> <messageId> — cancella messaggio dalla inbox server-side (o marca come cancellato)
+Uso della classe centrale: ObjectMapper mapper = new ObjectMapper();
 
-- PING — testa connessione
+Uso del TypeReference permette di conservare le informazioni evitando il problema del Type Erasure, in cui Java rimuove le informazioni dei tipi generici a runtime, in cui se si deserializza JSON in un elemento della List<Email> Jackson non saprà di cosa è fatto la lista.
+Le parentesi graffe `{}` alla fine di `new TypeReference<List<User>>(){}` è un trucco che forza il compilatore a memorizzare il tipo generico nel bytecode della sottoclasse.
 
-- QUIT — chiude connessione
 
 #### Uso del modulo Maven chiamato Shared (produce un jar)
 Viene creato un modulo a parte che sarà una libreria che conterrà i file in comune sia nel JVM Client che nel JVM Server (contratto tra le due classi); viene prodotto un jar in modo da creare la libreria condivisa
 Tale modulo conterrà file per:
-- il `models/` classi di dominio che vengono serializzate in JSON per la comunicazione client-server. In questo caso `Email.java`
-- il `protocol/` definisce struttura e regole di comunicazione tra client e server. Come `CommandOperation.java` `ProtocolConstants.java` `Message.java`
+- il `models/` classi di dominio che vengono serializzate in JSON per la comunicazione client-server. In questo caso `Email.java` e `Message.java`
+- il `protocol/` definisce struttura e regole di comunicazione tra client e server. Come `CommandOperation.java` e `ProtocolConstants.java`
 - l'`utils/` helper per operazioni comuni tra client e server. Cioè il `JsonSerializer.java`
 
 #### Classe Email 
@@ -172,34 +188,12 @@ Ciclo di vita completo di una Email (passo-passo):
 3) Ricezione sul SERVER; riceve il JSON e lo ricostruisce come oggetto (deserializzazione)
 4) Salvataggio; prende l’istanza Email e la aggiunge alla mailbox dei destinatari (vive nel file JSON e in memoria del server)
 5) Distribuzione al client destinatario; riceve JSON e ricostruisce l’oggetto Email, questa è una nuova istanza Java, ma rappresenta lo stesso messaggio (stesso id) 
-6) Visualizzazione; inserisce l’Email nella ObservableList<Email> inbox e a ListView la mostra automaticamente
-
-Per un progetto reale sarebbe meglio fare una configurazione della porta del server all'esterno per garantire flessibilità e separazione tra codice e configurazione; altrimenti se la si scrive nel codice bisognerebbe ricompilare e ridistribuire rischiando cosi errori inutili; altrimenti si scrive direttamente sul codice
-Uso della seguente fonte:
- - https://stackoverflow.com/questions/24093257/thread-currentthread-getcontextclassloader-getresourceasstream-reads-a-prope
+6) Visualizzazione; inserisce l’Email nella inbox e a ListView la mostra automaticamente
 
 Server aperto in backend nel metodo main() della classe ServerMain 
 
-#### Serialiazzione e Deserializzazione JSON
-Uso di una libreria di mapping JSON per serializzare o deserializzare l'oggetto Email, in questo caso Jackson, che permetterà di trasformare l'oggetto in JSON o viceversa
-Aggiungendo una dipendenza all'interno di Maven
-
-#### Uso di Jackson
-Libreria Java per serializzare da oggetti Java a JSON e viceversa (deserializzare)
-Dipendenza Maven con Jackson
-    <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>com.fasterxml.jackson.datatype</groupId>
-        <artifactId>jackson-datatype-jsr310</artifactId>
-    </dependency>
-
-Uso della classe centrale: ObjectMapper mapper = new ObjectMapper();
-
-
 ### Thread e Thread Pool
+
 Si ha un solo thread che rimane in attessa di connessioni (accpet()) e li delega al pool di thread
 Si è aggiunto un pool di thread per gestire in maniera sincronizzata e parallela i task invitati per gestire la connessione fra il server e il client che l'ha richiesto
 L'ha decisione ricade tra l'executors newFixedThreadPool (che è gia preconfigurato) oppure ThreadPoolExecutor (che è configurabile, più adatto per un controllo su una architettura reale come con un server o un socket); per questo si è deciso di optare per un controllo completo (in modo da non creare una coda infinita ma piuttosto una controllata)
@@ -216,36 +210,39 @@ Inoltre nel ciclo principale c'è un timeout per poter controllare periodicament
 N.B. 
     il metodo start() che “avvia” il server non è mai invocato direttamente all’interno dello stesso ServerSocketManager; è sempre un altro thread (GUI o main) che lo richiama, mentre super.start() è quello che innesca la creazione del thread esecutore. Per il resto la logica di accettazione/dispatch all’interno di run() e il ruolo del pool sono esattamente come li hai spiegati.
 
-## Mere && Vale
+Uso del comando `Platform.runLater(Runnable runnable)` di JavaFX è un metodo utilizzato per eseguire un'operazione sul thread dell'applicazione JavaFX (UI thread) da un thread in background, viene usato:
+- nella classe `HelloController` aggiorna la finestra del server per aggiornare il log
+- nella classe `InboxController` usato nello startPolling per aggiornare la finestra del utente per controllo di nuove email e/o se il server è attivo
 
-**Ecco cosa è stato implementato finora:**
+#### Sincronizzazione dei threads sul server
+- nella classe `InboxController` 
+    - uso del Lock ReentrantLock, in modo da evitare il race condition di quando si vuole aggiornare la lista delle email nel file JSON locale del client
 
-### 1. Architettura MVC e Pattern Observer
-* Creata la classe Model `EmailClient` utilizzando le **JavaFX Properties** (`SimpleStringProperty`). Questo soddisfa il requisito del pattern Observer-Observable: la `TableView` si aggiorna automaticamente ad ogni modifica dei dati senza bisogno di ricaricare la lista.
-* Separazione delle responsabilità: la logica di connessione è stata isolata nella classe dedicata `MailService`, mantenendo i Controller puliti e dedicati solo alla gestione della UI.
+- nella classe `ServerStorage`
+    - Uso del Lock ReentrantReadWriteLock
+    - Sincronizzazione lato server
 
-### 2. Flusso dell'Applicazione e UI
-* **Login:** Implementato il controllo sintattico della mail tramite Regex. Se valida, la mail viene passata al controller principale aprendo la schermata della Inbox.
-* **Lettura:** La tabella mostra la lista delle email. Cliccando su una riga, il pannello "Dettagli" a destra si popola automaticamente con il contenuto completo e i pulsanti di azione si sbloccano.
-* **Scrittura & Azioni:** Completati tutti i flussi dei bottoni:
-    * *Nuovo Messaggio / Pulisci:* Svuotano i campi del composer.
-    * *Reply / Reply-All:* Passano al composer pre-compilando il destinatario, aggiungendo "Re:" all'oggetto e riportando il testo originale.
-    * *Forward:* Passa al composer pre-compilando "Fwd:" e il testo originale inoltrato.
-    * *Elimina:* Rimuove in tempo reale la mail dalla lista osservabile.
+### Pattern MVC sia lato Client che lato Server
 
-### 3. Concorrenza (Multithreading) e Rete
-* **Polling in Background:** Implementato un Thread dedicato (`Daemon`) che ogni 5 secondi richiede al `MailService` le nuove email.
-* **Sicurezza Thread-UI:** Tutti gli aggiornamenti visivi (nuovi messaggi in lista, notifiche, cambio stato connessione) derivanti dal thread di polling vengono passati al JavaFX Application Thread tramite `Platform.runLater()`, evitando il crash dell'interfaccia.
-* **Invio Asincrono:** L'azione di invio mail è gestita tramite un `Task` di JavaFX in background. Durante l'operazione l'interfaccia mostra un `ProgressIndicator` (spinner) e inibisce i click multipli.
+Lato Client:
+- model: la classe `EmailClient` utilizza le properties di JavaFX (`SimpleStringProperty`); 
+sono valori osservabili e modificabili. 
+Questo soddisfa il pattern Observer–Observable: le proprietà implementano ObservableValue e notificano automaticamente i cambiamenti (e reagisce automaticamente alle modifiche della lista (GUI reattiva)).
+La `ObservableList<EmailClient>` contiene gli oggetti del model, cioè una lista di oggetti osservabile.
+La `TableView`(componente della GUI) è collegata sia alla `ObservableList` (tramite `setItems(emailList)`) sia alle properties (tramite `TableColumn`  usano `setCellValueFactory(...))
+I `ChangeListener` (es. `selectedItemProperty()`) permettono di reagire a eventi della GUI come la selezione che è un `ObservableValue`.
+- view: `inbox-view.fxml` e `login-view.fxml` che mostrano inbox, dettagli messaggio, bottoni ecc..; non contiene logica applicativa
+- controller: `InboxController` e `LoginController` entrambi reagiscono agli eventi della GUI e permettono di parlare con il server ed eventualmente aggiornare il model
 
-### 4. Validazione e Gestione Errori
-* Implementata la validazione Regex estesa: il campo "To:" (destinatari) supporta l'inserimento di **indirizzi multipli separati da virgola**, validandoli singolarmente prima di permettere l'invio.
-* Gestione visiva della disconnessione (pallino rosso) e della notifica di nuovi messaggi (banner chiudibile).
->>>>>>> 1f53d2fc89868967985d4e078dfd4f530090c9f6
-
+Lato Server:
+- model: `ServerStorage` contiene una struttura dati `Map<String, Object>` che permette di gestire gli utenti, email, concorrenza e persistenza dei file json
+La concorrenza sui file json viene gestita con l'implementazione del Lock `ReentrantReadWriteLock` 
+- view: `hello-view.fxml` mostra la grafica applicata al log degli eventi del server
+- controller: `ClientHandler` e `HelloController` entrambi coordinano la GUI del server e `ClientHandler` permette di aggiornare e gestire le operazioni con il model
 
 
-DOCUMENTO
-COMANDI AGGIUNTIVI PER LA CORRETTA COMUNICAZIONE TRA CLIENT-SERVER (tipo per controllo del messaggio che sia arrivato correttamente)
-
-PROBLEMA che potrebbe o meno in base alla richiesta della prof, cioè che il client non fa persistere l'email che gli sono stati inviati in precedenza, perchè solo il server li gestisce come persistenti e che li marchia come già inviati al client (e non per via del server shutdown)
+#### Polling in Background: 
+Implementato un Thread dedicato (`Daemon`) che ogni 5 secondi richiede al `MailService` le nuove email.
+**Sicurezza Thread-UI:** Tutti gli aggiornamenti visivi (nuovi messaggi in lista, notifiche, cambio stato connessione) derivanti dal thread di polling vengono passati al JavaFX Application Thread tramite `Platform.runLater()`, evitando il crash dell'interfaccia.
+**Invio Asincrono:** L'azione di invio mail è gestita tramite un `Task` di JavaFX in background. Durante l'operazione l'interfaccia mostra un `ProgressIndicator` (spinner) e inibisce i click multipli.
+Gestione visiva della disconnessione (pallino rosso) e della notifica di nuovi messaggi (banner chiudibile).

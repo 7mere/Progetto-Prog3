@@ -4,13 +4,15 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.unito.client.models.EmailClient;
 import com.unito.shared.models.Email;
+import com.unito.shared.models.Message;
 import com.unito.shared.protocol.CommandOperation;
-import com.unito.shared.protocol.Message;
 import com.unito.shared.protocol.ProtocolConstants;
 import com.unito.shared.utils.JsonSerializer;
 
@@ -34,6 +36,8 @@ public class MailService {
             out.println(JsonSerializer.serialize(request)); // Inviamo il JSON al server
 
             // 2. Leggiamo la risposta
+            System.out.println("JSON mandato dal lato client: " + request);
+
             String jsonResponse = in.readLine();
             if (jsonResponse != null) {
                 // Trasformiamo il JSON ricevuto in un oggetto Message
@@ -73,16 +77,16 @@ public class MailService {
             String jsonResponse = in.readLine();
             if (jsonResponse != null) {
                 Message response = JsonSerializer.deserialize(jsonResponse, Message.class);
-                return response.getStatus() == ProtocolConstants.STATUS_OK;
+                return response.getStatus() == ProtocolConstants.STATUS_CREATED;
             }
         }
         return false;
     }
 
     public boolean deleteEmail(String userEmail, String emailId) throws Exception {
-        try (java.net.Socket socket = new java.net.Socket(SERVER_IP, SERVER_PORT);
-             java.io.PrintWriter out = new java.io.PrintWriter(socket.getOutputStream(), true);
-             java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(socket.getInputStream()))) {
+        try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
             // Prepariamo i dati: chi è l'utente e quale mail vuole cancellare
             String[] payload = { userEmail, emailId };
@@ -129,13 +133,13 @@ public class MailService {
         // Convertiamo la Stringa della grafica nella Data del Server (java.util.Date)
         if (client.getDate() != null && !client.getDate().isEmpty()) {
             try {
-                java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+                SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
                 pojo.setDate(formatter.parse(client.getDate()));
             } catch (Exception e) {
-                pojo.setDate(new java.util.Date()); // Se c'è errore, mette la data di adesso
+                pojo.setDate(new Date()); // Se c'è errore, mette la data di adesso
             }
         } else {
-            pojo.setDate(new java.util.Date()); // Se è vuota, mette la data di adesso
+            pojo.setDate(new Date()); // Se è vuota, mette la data di adesso
         }
         return pojo;
     }

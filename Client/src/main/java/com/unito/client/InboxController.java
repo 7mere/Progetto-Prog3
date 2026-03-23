@@ -1,13 +1,26 @@
 package com.unito.client;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.unito.client.models.EmailClient;
 import com.unito.client.service.MailService;
 import com.unito.shared.utils.JsonSerializer;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -18,13 +31,17 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class InboxController {
 
     private final MailService mailService = new MailService();
     private String currentUserEmail; // Da valorizzare nel metodo initUser()
-
+    
+    private final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private final Lock fileLock = new ReentrantLock();
+    
     /* =========================================================
      * SEZIONE UTENTE / STATO CONNESSIONE
      * ---------------------------------------------------------
@@ -204,11 +221,13 @@ public class InboxController {
         messageTable.setItems(emailList);
 
         // 3. Creiamo dei DATI FINTI per testare la grafica
+        /*
         EmailClient mail1 = new EmailClient("1", "professore@unito.it", "Voti Progetto", "Bravi, avete preso 30!", "12/05/2026");
         EmailClient mail2 = new EmailClient("2", "segreteria@unito.it", "Tasse", "Ricordati di pagare la rata.", "10/05/2026");
         EmailClient mail3 = new EmailClient("3", "mario.rossi@edu.unito.it", "Appunti Prog 3", "Ciao, mi passi gli appunti sui Socket?", "09/05/2026");
 
         emailList.addAll(mail1, mail2, mail3);
+        */
 
         // 4. (EXTRA) Quando clicchi su una mail, aggiorna i dettagli a destra!
         messageTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
@@ -280,6 +299,7 @@ public class InboxController {
         EmailClient selected = messageTable.getSelectionModel().getSelectedItem();
         if (selected == null) return; // Se non c'è nulla di selezionato, non facciamo niente
 
+        /*
         // Usiamo un Task per non "congelare" la grafica mentre la rete lavora
         javafx.concurrent.Task<Boolean> deleteTask = new javafx.concurrent.Task<>() {
             @Override
@@ -297,7 +317,37 @@ public class InboxController {
             }
         });
 
-        new Thread(deleteTask).start();
+        // new Thread(deleteTask).start();
+        */
+
+       executor.submit(() -> {
+        try {
+            boolean success = mailService.deleteEmail(currentUserEmail, selected.getId());
+
+            Platform.runLater(() -> {
+                if (success) {
+                    emailList.remove(selected);
+                    saveLocalInbox(); // aggiorna la inbox 
+                    messageTable.getSelectionModel().clearSelection();
+
+                    // permette di resettare la label del email eliminata
+                    detailFromLabel.setText("");
+                    detailSubjectLabel.setText("");
+                    detailDateLabel.setText("");
+                    detailBodyArea.setText("");
+
+                    statusBarLabel.setText("Email eliminata correttamente.");
+                } else {
+                    statusBarLabel.setText("Errore eliminazione.");
+                }
+            });
+
+        } catch (Exception e) {
+            Platform.runLater(() ->
+                statusBarLabel.setText("Errore di rete.")
+            );
+        }
+        });
     }
 
     @FXML
@@ -322,17 +372,16 @@ public class InboxController {
         // 1. Creiamo la mail con i dati presi dalla grafica
         EmailClient emailDaInviare = new EmailClient();
         // Genera un id univoco
-        emailDaInviare.setId(java.util.UUID.randomUUID().toString());
+        emailDaInviare.setId(UUID.randomUUID().toString());
         // setta la data odierna per la mail da inviare
-        emailDaInviare.setDate(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        emailDaInviare.setDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
         emailDaInviare.setSender(currentUserEmail);
         emailDaInviare.setSubject(subjectField.getText() != null ? subjectField.getText() : "");
         emailDaInviare.setBody(bodyArea.getText() != null ? bodyArea.getText() : "");
 
-        java.util.List<String> destinatari = new java.util.ArrayList<>();
-        for (String addr : toAddress.split(",")) {
-            destinatari.add(addr.trim());
-        }
+        List<String> destinatari = new ArrayList<>();
+        destinatari.add(toAddress.trim());
+
         // Se c'è qualcosa nel campo opzionale Cc, lo aggiungiamo
         if (ccField.getText() != null && !ccField.getText().trim().isEmpty()) {
             for (String addr : ccField.getText().split(",")) {
@@ -342,7 +391,7 @@ public class InboxController {
         emailDaInviare.setRecipients(destinatari);
 
         // 2. Task in background per la vera chiamata di rete
-        javafx.concurrent.Task<Void> sendTask = new javafx.concurrent.Task<>() {
+        Task<Void> sendTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
                 // CHIAMATA VERA AL SERVER! (Addio Thread.sleep!)
@@ -407,7 +456,7 @@ public class InboxController {
         composeModeLabel.setText("Modalità: REPLY-ALL");
 
         // Creiamo la lista di tutti quelli a cui rispondere
-        java.util.List<String> tuttiDestinatari = new java.util.ArrayList<>();
+        List<String> tuttiDestinatari = new ArrayList<>();
         tuttiDestinatari.add(selected.getSender()); // Aggiungiamo il mittente
 
         // Aggiungiamo gli altri destinatari originali (se ci sono e se non siamo noi)
@@ -446,8 +495,8 @@ public class InboxController {
                     List<EmailClient> nuoveMail = mailService.fetchNewEmails(currentUserEmail);
 
                     // AGGIUNTA: Se arriviamo qui senza errori, siamo connessi! Coloriamo di VERDE.
-                    javafx.application.Platform.runLater(() -> {
-                        connectionDot.setFill(javafx.scene.paint.Color.GREEN);
+                    Platform.runLater(() -> {
+                        connectionDot.setFill(Color.GREEN);
                         connectionStatusLabel.setText("CONNESSO");
                         errorLabel.setVisible(false);
                         errorLabel.setManaged(false);
@@ -476,7 +525,7 @@ public class InboxController {
                         // Aggiorniamo la notifica e l'orario SOLO se abbiamo effettivamente scaricato qualcosa di nuovo
                         if (aggiunteNuove) {
                             saveLocalInbox();
-                            lastUpdateLabel.setText(java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
+                            lastUpdateLabel.setText(LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
                             notificationBar.setVisible(true);
                             notificationBar.setManaged(true);
                         }
@@ -485,8 +534,8 @@ public class InboxController {
                     break;
                 } catch (Exception e) {
                     // Se la rete cade, torna ROSSO
-                    javafx.application.Platform.runLater(() -> {
-                        connectionDot.setFill(javafx.scene.paint.Color.RED);
+                    Platform.runLater(() -> {
+                        connectionDot.setFill(Color.RED);
                         connectionStatusLabel.setText("DISCONNESSO");
                         errorLabel.setText("Errore di connessione col server.");
                         errorLabel.setVisible(true);
@@ -506,7 +555,7 @@ public class InboxController {
 
         String[] parts = emails.split(",");
         for (String part : parts) {
-            if (!com.unito.client.LoginController.isValidEmail(part.trim())) {
+            if (!LoginController.isValidEmail(part.trim())) {
                 return false; // Se anche solo una è sbagliata, blocca tutto!
             }
         }
@@ -520,18 +569,22 @@ public class InboxController {
     }
 
     /**
-     * Salva la lista delle email corrente in un file JSON locale al client.
+     * Aggiorna la lista delle email corrente in un file JSON locale al client.
      */
     private void saveLocalInbox() {
+        fileLock.lock();
         try {
-            java.io.File dir = new java.io.File("client_data");
+            File dir = new File("client_data");
             if (!dir.exists()) dir.mkdir();
 
-            java.io.File file = new java.io.File(dir, currentUserEmail + "_inbox.json");
-            String json = JsonSerializer.serialize(new java.util.ArrayList<>(emailList));
-            java.nio.file.Files.writeString(file.toPath(), json);
+            File file = new File(dir, currentUserEmail + "_inbox.json");
+            String json = JsonSerializer.serialize(new ArrayList<>(emailList));
+            Files.writeString(file.toPath(), json);
         } catch (Exception e) {
             System.err.println("Errore nel salvataggio locale: " + e.getMessage());
+        }
+        finally {
+            fileLock.unlock();
         }
     }
 
@@ -540,9 +593,9 @@ public class InboxController {
      */
     private void loadLocalInbox() {
         try {
-            java.io.File file = new java.io.File("client_data/" + currentUserEmail + "_inbox.json");
+            File file = new File("client_data/" + currentUserEmail + "_inbox.json");
             if (file.exists()) {
-                String json = java.nio.file.Files.readString(file.toPath());
+                String json = Files.readString(file.toPath());
                 EmailClient[] salvate = JsonSerializer.deserialize(json, EmailClient[].class);
                 emailList.setAll(salvate);
             }

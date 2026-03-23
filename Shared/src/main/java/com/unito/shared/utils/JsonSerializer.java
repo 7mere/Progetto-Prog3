@@ -15,7 +15,8 @@ public class JsonSerializer {
         objectMapper = new ObjectMapper();
 
         // Abilita la formatazzione di JSON più leggibile
-        //objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        // objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        // Per il momento lo tolto perché bisognerebbe creare più categorie di messaggi "data" da inviare per via dei campi che alcuni mandando solo email altri interi oggetti serializzati
 
         // Non lancia errore se nel JSON ci sono campi che non esistono nella classe
         // objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);

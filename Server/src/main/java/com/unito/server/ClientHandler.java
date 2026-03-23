@@ -85,13 +85,18 @@ public class ClientHandler implements Runnable {
                         // Salviamo la mail nel file di ogni destinatario
                         for (String recipient : emailToSend.getRecipients()) {
                             if(model.userExists(recipient.trim())) {
-                                model.addEmailToInbox(recipient.trim(), emailToSend);
+                                if(model.addEmailToInbox(recipient.trim(), emailToSend)) {
+                                    response.setStatus(ProtocolConstants.STATUS_CREATED);
+                                    response.setData("Email elaborata con successo");
+                                    HelloController.getInstance().logMessage("Email inviata da " + emailToSend.getSender() + " a " + emailToSend.getRecipients());
+                                }
+                                else {
+                                    response.setStatus(ProtocolConstants.STATUS_FORBIDDEN);
+                                    response.setData("Email non elaborata");
+                                    HelloController.getInstance().logMessage("ERRORE: Email non inviata");
+                                }
                             }
                         }
-
-                        response.setStatus(ProtocolConstants.STATUS_CREATED);
-                        response.setData("Email elaborata con successo");
-                        HelloController.getInstance().logMessage("Email inviata da " + emailToSend.getSender() + " a " + emailToSend.getRecipients());
                         break;
 
                     case DELETE:
@@ -107,7 +112,7 @@ public class ClientHandler implements Runnable {
                         break;
 
                     default:
-                        // Se arriva un comando che non conosciamo
+                        // Se arriva un comando che non conosciamo (es. DELETE che faremo più avanti)
                         response.setStatus(ProtocolConstants.STATUS_BAD_REQUEST);
                         response.setData("Comando non supportato");
                         HelloController.getInstance().logMessage("Comando ignorato: " + command);

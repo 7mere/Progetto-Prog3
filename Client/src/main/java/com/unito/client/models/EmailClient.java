@@ -14,24 +14,13 @@ public class EmailClient {
     private final StringProperty body = new SimpleStringProperty();
     private final StringProperty date = new SimpleStringProperty();
 
-    // Per i destinatari multipli, una semplice lista va bene
+    // Per i destinatari multipli, usiamo una semplice lista
     private List<String> recipients = new ArrayList<>();
 
-    // Costruttore vuoto (molto utile in futuro quando userete Jackson per i JSON)
+    // Costruttore vuoto
     public EmailClient() {}
 
-    // Costruttore di comodità per creare email velocemente (utile ora per i test)
-    public EmailClient(String id, String sender, String subject, String body, String date) {
-        this.id.set(id);
-        this.sender.set(sender);
-        this.subject.set(subject);
-        this.body.set(body);
-        this.date.set(date);
-    }
-
     // --- METODI GETTER E SETTER STANDARD ---
-    // Usiamo .get() e .set() per estrarre o inserire il valore nella "scatola" Property
-
     public String getId() { return id.get(); }
     public void setId(String value) { id.set(value); }
 
@@ -51,7 +40,6 @@ public class EmailClient {
     public void setRecipients(List<String> recipients) { this.recipients = recipients; }
 
     // --- METODI PROPERTY (FONDAMENTALI PER JAVAFX E L'OBSERVER PATTERN) ---
-    // Questi metodi restituiscono la "scatola" stessa. Serviranno alla TableView!
 
     public StringProperty idProperty() { return id; }
     public StringProperty senderProperty() { return sender; }

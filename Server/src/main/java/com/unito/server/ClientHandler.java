@@ -107,7 +107,7 @@ public class ClientHandler implements Runnable {
                         break;
 
                     default:
-                        // Se arriva un comando che non conosciamo (es. DELETE che faremo più avanti)
+                        // Se arriva un comando che non conosciamo
                         response.setStatus(ProtocolConstants.STATUS_BAD_REQUEST);
                         response.setData("Comando non supportato");
                         HelloController.getInstance().logMessage("Comando ignorato: " + command);

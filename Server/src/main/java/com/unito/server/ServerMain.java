@@ -35,11 +35,6 @@ public class ServerMain extends Application {
             System.exit(0);
         });
 
-        stage.setOnCloseRequest(event -> {
-            Platform.exit();
-            System.exit(0); // Forza lo spegnimento di tutti i thread di rete
-        });
-
         stage.show();
 
         // carica la configurazione del server da file

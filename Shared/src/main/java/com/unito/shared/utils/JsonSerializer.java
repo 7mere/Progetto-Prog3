@@ -68,7 +68,7 @@ public class JsonSerializer {
     }
 
     /**
-     * Ottiene il ObjectMapper per.
+     * Ottiene il ObjectMapper per usarlo in caso di si vuole usare altri metodi (non per forza quelli serialize e deserialize).
      *
      * @return l'istanza ObjectMapper
      */

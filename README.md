@@ -216,26 +216,40 @@ Uso del comando `Platform.runLater(Runnable runnable)` di JavaFX è un metodo ut
 
 #### Sincronizzazione dei threads sul server
 - nella classe `InboxController` 
-    - uso del Lock ReentrantLock, in modo da evitare il race condition di quando si vuole aggiornare la lista delle email nel file JSON locale del client
+    - uso del Lock `ReentrantLock`, in modo da evitare il race condition di quando si vuole aggiornare la lista delle email nel file JSON locale del client
 
 - nella classe `ServerStorage`
-    - Uso del Lock ReentrantReadWriteLock
-    - Sincronizzazione lato server
+    - Uso del lock `ReentrantReadWriteLock` per la gestione concorrente degli utenti registrati in `users.json`, in particolare:
+        - readLock consente accessi concorrenti in lettura (operazione più frequente, es. verifica esistenza utente)
+        - writeLock garantisce accesso esclusivo in scrittura (es. creazione nuovo utente)
+    - Dati degli utenti gestiti dalla struttura dati `Map<String, User>` (implementata con `HashMap`), dove:
+        -  la chiave unica è l'email
+        - il valore associato sono le informazioni su quell'utente
+    Questa scelta permette accesso diretto in tempo O(1), ideale per operazioni frequenti come lettura e validazione
+
+    - Sincronizzazione delle mailbox per ogni utente tramite un sistema di lock per ognuno di loro:
+        - viene utilizzata una `Map<String, Object>` chiamata `mailboxLocks`, implementata con `ConcurrentHashMap`
+        - ogni email è associata a un oggetto lock dedicato, ottenuto tramite computeIfAbsent, che garantisce creazione atomica e thread-safe del lock
+        - le operazioni sulle inbox (lettura, scrittura, cancellazione) sono racchiuse in blocchi synchronized lato client su questi lock
+    - Questo approccio consente:
+        - isolamento delle mailbox: ogni utente ha un proprio lock indipendente
+        - assenza di race condition nelle operazioni sui file JSON delle inbox
+        - maggiore parallelismo: thread diversi possono operare su mailbox diverse senza bloccarsi a vicenda
 
 ### Pattern MVC sia lato Client che lato Server
 
 Lato Client:
 - model: la classe `EmailClient` utilizza le properties di JavaFX (`SimpleStringProperty`); 
 sono valori osservabili e modificabili. 
-Questo soddisfa il pattern Observer–Observable: le proprietà implementano ObservableValue e notificano automaticamente i cambiamenti (e reagisce automaticamente alle modifiche della lista (GUI reattiva)).
-La `ObservableList<EmailClient>` contiene gli oggetti del model, cioè una lista di oggetti osservabile.
-La `TableView`(componente della GUI) è collegata sia alla `ObservableList` (tramite `setItems(emailList)`) sia alle properties (tramite `TableColumn`  usano `setCellValueFactory(...))
-I `ChangeListener` (es. `selectedItemProperty()`) permettono di reagire a eventi della GUI come la selezione che è un `ObservableValue`.
+Questo soddisfa il pattern Observer–Observable: le proprietà implementano ObservableValue e notificano automaticamente i cambiamenti (reagisce automaticamente alle modifiche della lista (GUI reattiva)).
+La `ObservableList<EmailClient>` contiene gli oggetti del model, cioè una lista di oggetti osservabili.
+La `TableView`(componente della GUI) è collegata sia alla `ObservableList` (tramite `setItems(emailList)`) sia alle properties (tramite `TableColumn`  usano `setCellValueFactory(...)`)
+I `ChangeListener` (es. `selectedItemProperty().addListener`) permettono di reagire a eventi della GUI come la selezione della property `selectedItemProperty()`, quindi è un `ObservableValue`.
 - view: `inbox-view.fxml` e `login-view.fxml` che mostrano inbox, dettagli messaggio, bottoni ecc..; non contiene logica applicativa
 - controller: `InboxController` e `LoginController` entrambi reagiscono agli eventi della GUI e permettono di parlare con il server ed eventualmente aggiornare il model
 
 Lato Server:
-- model: `ServerStorage` contiene una struttura dati `Map<String, Object>` che permette di gestire gli utenti, email, concorrenza e persistenza dei file json
+- model: `ServerStorage` contiene una struttura dati `Map<String, Object>` (per accesso diretto) che permette di gestire gli utenti, email, concorrenza e persistenza dei file json
 La concorrenza sui file json viene gestita con l'implementazione del Lock `ReentrantReadWriteLock` 
 - view: `hello-view.fxml` mostra la grafica applicata al log degli eventi del server
 - controller: `ClientHandler` e `HelloController` entrambi coordinano la GUI del server e `ClientHandler` permette di aggiornare e gestire le operazioni con il model

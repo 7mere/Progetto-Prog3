@@ -1,11 +1,6 @@
 package com.unito.server.models;
 
-import com.fasterxml.jackson.core.type.TypeReference; // per evitare problemi con il Type Ersasure, in cui se si deserializza JSON in un elemento della List<Email> Jackson nln saprà di cosa è fatto la lista
-import com.unito.server.HelloController;
-import com.unito.shared.models.Email;
-import com.unito.shared.utils.JsonSerializer;
-
-import java.io.File;
+import java.io.File; // per evitare problemi con il Type Ersasure, in cui se si deserializza JSON in un elemento della List<Email> Jackson nln saprà di cosa è fatto la lista
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,8 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.unito.server.HelloController;
+import com.unito.shared.models.Email;
+import com.unito.shared.utils.JsonSerializer;
 
 public class ServerStorage {
 
@@ -41,8 +40,9 @@ public class ServerStorage {
         ensureDefaultUsers();
     }
 
-    private Object getMailboxLock(String userEmail) {
-        return mailboxLocks.computeIfAbsent(userEmail, k -> new Object());
+    private Object getMailboxLock(String userEmail) { // è atomico, per questo viene sincronizzato l'intero metodo oggetto
+        return mailboxLocks.computeIfAbsent(userEmail, k -> new Object()); // controlla che se la chiave userEmail non esiste allora il metodo lo crea e lo inserisce nella Map dei lock (nuovo lock sulla casella di posta)
+        // restituisce l'Object della Map cioè il lock
     }
 
     private void ensureDefaultUsers() {
@@ -101,9 +101,9 @@ public class ServerStorage {
         try {
             File f = new File(USERS_FILE);
             if (!f.exists()) {
-                return new HashMap<>();
+                return new HashMap<>(); 
             }
-            return JsonSerializer.getObjectMapper().readValue(f, new TypeReference<Map<String, User>>() {});
+            return JsonSerializer.getObjectMapper().readValue(f, new TypeReference<Map<String, User>>() {}); // permette di leggere un JSON che rappresenta una Map<String, User> e convertirlo in un oggetto Java di quel tipo
         } catch (IOException e) {
             HelloController.getInstance().logMessage("Errore lettura users.json: " + e.getMessage());
             return new HashMap<>();

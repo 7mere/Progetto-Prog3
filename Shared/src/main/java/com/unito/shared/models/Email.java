@@ -17,7 +17,6 @@ public class Email {
     private String subject; // oggetto dell'email
     private String body; // corpo dell'email
     private Date date; // data di invio dell'email
-    // private Boolean read; //Usato solo dal client, permette di capire se l'utente ha letto l'email oppure no
 
     // costruttore vuoto per Jackson (deserializzazione)
     public Email() {}
@@ -34,7 +33,6 @@ public class Email {
         this.subject = subject;
         this.body = body;
         this.date = new Date();
-        // this.read = false;
     }
 
     // getter e setter
@@ -65,11 +63,4 @@ public class Email {
         Email email = (Email) o;
         return id != null && id.equals(email.id);
     }
-    
-    /*
-     @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
-    }
-    */
 }
